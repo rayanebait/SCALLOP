@@ -48,8 +48,10 @@ amscd, geometry, xspace, enumerate, mathtools}
 
 
 \begin{document}
-\title{Produit d'idéaux}
+\title{Explication du code}
+\section{produit d'idéaux}
 \maketitle
+(Cette partie est finalement pas utilisée telle quelle, la fonctionnalité étant implémentée en sage)
 Si $I=(a, b+id)$ et $J=(c, f+ig)$ on les représente via une forme normale de hermite:
 \[
     I=\begin{pmatrix}a & b\\ 0&d\end{pmatrix}
@@ -73,4 +75,13 @@ Dont on calcule la forme normale de hermite pour obtenir
 
 (Tout est transposé dans le code car FLINT effectue la réduction 
 hnf sur les lignes)
+
+\section{Calcul du groupe de classe}
+Les idéaux d'ordres, le calcul de produit et la composition de forme quadratiques n'étant pas implémentés 
+en sage. Je l'ai fait en C à l'aide de FLINT.\\
+On utilise l'algorithme de Pohlig-Hellman couplé à rho-pollard. L'implémentation 
+est faite à l'aide du module qfb de FLINT qui permet de calculer dans le groupe de classe de 
+formes quadratiques binaires de discriminant donné.
+
+
 \end{document}

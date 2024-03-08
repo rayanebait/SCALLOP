@@ -9,7 +9,7 @@ CFILES=$(MAINCFILES) $(LIBCFILES)
 
 BINARY=$(patsubst ./src/%.c, ./bin/%, $(MAINCFILES))
 
-INCDIRS=./include /usr/include/flint
+INCDIRS=./include /usr/include/flint 
 
 INCLIB=/usr/include/flint
 LIBRARIES=gmp flint
