@@ -65,8 +65,8 @@ def add_prime_above(p, last_prime):
 	p.append(K.primes_above(last_prime)[0])
 	return p
 
-initial_B=250
-B=260
+initial_B=90
+B=100
 
 K.<i>=NumberField(x^2+1)
 last_prime=5
@@ -77,6 +77,7 @@ while last_prime<initial_B:
 	(split_primes, last_prime)=add_split_primes_below_B(split_primes, last_prime)
 	p_above=add_prime_above(p_above, last_prime)
 print(last_prime)
+
 while last_prime<B:
 	print(f"next: {last_prime}\n")
 	gen_candidates(K, p_above)

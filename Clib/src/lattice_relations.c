@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 static void 
-fprint_data(FILE* F, fmpz *dlogs, ulong nb_dlogs);
+fprint_data(FILE* F, fmpz *dlogs, ulong nb_dlogs, ulong gen_ind);
 
 static void
 earlycleanup1(FILE *G, FILE *H, FILE *F,
@@ -119,20 +119,25 @@ int main(int argc, char *argv[])
     qfb_init(l_0);
 
     /*set l_0 to a prime above 5 (Should generate the class group)*/
-    /*Here l_0 is of order (f-(-1/f))/2*/
-    qfb_set(l_0, qfbs);
+    /*Here l_0 is of order (f-(-1/f))/2 for the 40/80 bits parameters
+    so generates the class group*/
+
+    ulong gen_ind = 0;
+    qfb_set(l_0, qfbs+gen_ind);
     qfb_reduce(l_0, l_0, D);
 
     fmpz dlogs[nb_primes];
-    for (ulong i = 1; i < nb_primes; i++)
+    for (ulong i = 0; i < nb_primes; i++)
     {
+        if(i==gen_ind) continue;
+
         fmpz_init(dlogs + i);
         qfb_discrete_log(
             dlogs+i, qfbs+i,
             l_0, f, factors,
             nb_factors);
     }
-    fprint_data(F, dlogs, nb_primes);
+    fprint_data(F, dlogs, nb_primes, gen_ind);
 
     // single_discrete_log(dlogs, qfbs, l_0, qfbs+4,f, D, factors, nb_factors);
     goto cleanup;
@@ -156,11 +161,13 @@ cleanup:
 }
 
 static void 
-fprint_data(FILE* F, fmpz *dlogs, ulong nb_dlogs)
+fprint_data(FILE* F, fmpz *dlogs, ulong nb_dlogs, ulong gen_ind)
 {
+    flint_fprintf(F, "%wu\n", gen_ind);
     flint_fprintf(F, "%wu\n", nb_dlogs);
-    for(ulong i=1; i<nb_dlogs; i++)
+    for(ulong i=0; i<nb_dlogs; i++)
     {
+        if(i==gen_ind) continue;
         fmpz_fprint(F, dlogs+i);
         fputc('\n', F);
     }
