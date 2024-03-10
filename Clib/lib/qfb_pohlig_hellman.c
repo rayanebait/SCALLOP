@@ -47,6 +47,7 @@ prime_ideals_to_qfbs(qfb *forms, ulong nb_primes, fmpz_t f, fmpz *r)
         -S_0={1<=a<=n_1},
         -S_1={n_1<a<= n_2},
         -S_2={n_2<a<=sqrt(D/3)}
+    for n_1=L/3, n_2=2*n_1, L=sqrt(D/3)
 */
 
 /*y=g^a*h^b*/
@@ -93,6 +94,7 @@ void qfb_discrete_log_prime_order(
         fmpz_set_ui(pdlog, 1);
         return;
     }
+
     /*can reuse pdlog*/
     fmpz_t a1, b1, a2, b2;
     fmpz_init_set_ui(a1, 1);
@@ -111,8 +113,6 @@ void qfb_discrete_log_prime_order(
     next_qfb(y, a1, b1, g, h, n_1, n_2, D, L);
     next_2_qfb(y2, a2, b2, g, h, n_1, n_2, D, L);
 
-    // qfb_print(y);
-    // qfb_print(y2);
     while (qfb_equal(y, y2) != 1)
     {
         next_qfb(y, a1, b1, g, h, n_1, n_2, D, L);
@@ -123,16 +123,7 @@ void qfb_discrete_log_prime_order(
         fmpz_mod(b2, b2, p);
     }
 
-    // flint_printf("a1=");
-    // fmpz_print(a1);
-    // flint_printf("\nb1=");
-    // fmpz_print(b1);
-    // flint_printf("\na2=");
-    // fmpz_print(a2);
-    // flint_printf("\nb2=");
-    // fmpz_print(b2);
-    // flint_printf("\n");
-    /*should verify for equality of b1, b2*/
+    /*should maybe verify for equality of b1, b2*/
     fmpz_sub(a1, a1, a2);
     fmpz_sub(b1, b2, b1);
     fmpz_invmod(b1, b1, p);
@@ -174,15 +165,9 @@ void qfb_discrete_log_prime_power(
     {
         qfb_pow_ui(g_i, g_alpha_i, D, power - i);
         qfb_pow_ui(h_i, h, D, power - i);
-        // qfb_print(g_i);
-        // flint_printf("\n");
-        // qfb_print(h_i);
-        // flint_printf("\n");
 
         qfb_discrete_log_prime_order(x_i, h_i, g_i, prime, n_1, n_2, D, L);
 
-        /*peut etre un pb d'index ici, x_i->x_i-1*/
-        /*ah non p_i est pas encore mis a la puissance p*/
         fmpz_mul(x_i, x_i, p_i);
 
         qfb_pow(g_i, g, D, x_i);
@@ -242,6 +227,7 @@ void qfb_discrete_log(fmpz_t dlog, qfb_t h, qfb_t g, fmpz_t f, fmpz *factors, ul
 
     /*Number of prime powers*/
     ulong j = 0;
+    /*Compute the prime powers*/
     for (ulong i = 0; i < nb_factors; i++)
     {
         fmpz_set(p_i, factors + i);
@@ -259,12 +245,6 @@ void qfb_discrete_log(fmpz_t dlog, qfb_t h, qfb_t g, fmpz_t f, fmpz *factors, ul
         j++;
     }
 
-    // fmpz_clear(p_i);
-    // for(int i=0; i<j; i++){
-    //     fmpz_print(prime_powers+i);
-    //     flint_printf("\n");
-    // }
-
     fmpz_t D, L;
     fmpz_init(D);
     fmpz_init(L);
@@ -279,14 +259,6 @@ void qfb_discrete_log(fmpz_t dlog, qfb_t h, qfb_t g, fmpz_t f, fmpz *factors, ul
     fmpz_fdiv_q_ui(n_1, L, 3);
     fmpz_mul_ui(n_2, n_1, 2);
 
-    // flint_printf("n1:");
-    // fmpz_print(n_1);
-    // flint_printf("\n");
-    // flint_printf("n2:");
-    // fmpz_print(n_2);
-    // flint_printf("\n");
-
-    // sleep(2);
     fmpz_t pp_prod;
     fmpz_init(pp_prod);
     fmpz_pp_prod(pp_prod, prime_powers, j);
