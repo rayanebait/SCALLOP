@@ -5,16 +5,15 @@
 
 int fmpz_arr_to_mat(fmpz_mat_t M, fmpz *arr, ulong len_arr, ulong n, ulong m)
 {
-    if(len_arr < n * m)
+    if (len_arr < n * m)
         return -1;
 
-    
-    for(ulong i = 0; i < n; i++){
+    for (ulong i = 0; i < n; i++)
+    {
         ulong ind = m * i;
-        for(ulong j = 0; j < m; j++)
-            fmpz_set(fmpz_mat_entry(M, i, j), arr+ind+j);
+        for (ulong j = 0; j < m; j++)
+            fmpz_set(fmpz_mat_entry(M, i, j), arr + ind + j);
     }
-
 
     return 1;
 }
@@ -52,13 +51,13 @@ void ideal_product(fmpz_mat_t IJ, fmpz_mat_t M, fmpz_mat_t I, fmpz_mat_t J)
 
     fmpz_fmms(fmpz_mat_entry(J_00_I, 0, 0),
               fmpz_mat_entry(I, 0, 1),
-              fmpz_mat_entry(J, 0, 1), 
+              fmpz_mat_entry(J, 0, 1),
               fmpz_mat_entry(I, 1, 1),
               fmpz_mat_entry(J, 1, 1));
 
     fmpz_fmma(fmpz_mat_entry(J_00_I, 0, 1),
               fmpz_mat_entry(I, 0, 1),
-              fmpz_mat_entry(J, 1, 1), 
+              fmpz_mat_entry(J, 1, 1),
               fmpz_mat_entry(I, 1, 1),
               fmpz_mat_entry(J, 0, 1));
 

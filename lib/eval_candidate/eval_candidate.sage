@@ -33,7 +33,7 @@ def eval_candidates_for_nprimes(nprimes):
 
 	nprimes=Integer(F.readline())
 	nb_factored=0
-	nb_candidates=10
+	nb_candidates=15
 
 	candidates=[]
 	fs=[2]*(2*nb_candidates)
@@ -55,8 +55,10 @@ def eval_candidates_for_nprimes(nprimes):
 		processes[i].start()
 
 
+	line=0
 	eof=False
 	while not eof:
+		line+=30
 		nb_factored+=1
 		#Multiple loops for readability, doesn't impact perf here
 
@@ -108,9 +110,9 @@ def eval_candidates_for_nprimes(nprimes):
 			if is_L_smooth(factors[0], factors[2]):
 				print(f"Conductor {factors[1]} gives: {factors[0]}")
 				candidates.append(factors)
-				#if len(candidates)==3:
-					#eof=True
-					#break
+				if len(candidates)==5:
+					eof=True
+					break
 			else:
 				print(f"Candidate {factors[1]} doesnt give {factors[2]}-smooth class group:\n\t{factors[0]}")
 
@@ -162,6 +164,7 @@ def eval_candidates_for_nprimes(nprimes):
 	G.write(f'Number of primes used: {nprimes}\n')
 	for candidate in candidates:
 		G.write(f"{candidate[1]} is O({candidate[2]})-smooth:\n\t {candidate[0]}\n")
+	G.write(f"finished at line: {line}\n")
 	
 	G.close()
 

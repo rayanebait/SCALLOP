@@ -14,6 +14,14 @@ typedef struct{
 
 typedef qfb qfb_t[1];
 
+typedef struct
+{
+   qfb_t q;
+   qfb_t q2;
+   slong iter;
+} qfb_hash_t;
+
+
 qfb_INLINE
 void qfb_init(qfb_t q)
 {
@@ -204,6 +212,11 @@ int qfb_is_primitive(qfb_t f)
 void qfb_prime_form(qfb_t r, fmpz_t D, fmpz_t p);
 
 ulong find_power(qfb_t f, fmpz_t n, ulong base);
+
+void qfb_hash_clear(qfb_hash_t *qhash, slong depth);
+slong qfb_hash_find(qfb_hash_t * qhash, qfb_t q, slong depth);
+qfb_hash_t * qfb_hash_init(slong depth);
+void qfb_hash_insert(qfb_hash_t * qhash, qfb_t q, qfb_t q2, slong iter, slong depth);
 
 int qfb_exponent_element(fmpz_t exponent, qfb_t f, fmpz_t n, ulong B1, ulong B2_sqrt);
 
