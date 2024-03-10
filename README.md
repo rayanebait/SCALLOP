@@ -1,1 +1,1 @@
-A tex file and a it's pdf are available in the readme directory
+A tex file and it's pdf are available in the readme directory (in french)
