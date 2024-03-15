@@ -174,8 +174,8 @@ def eval_candidates_for_nprimes(nprimes):
 	
 	G.close()
 
-nprimes=20
+nprimes=21
 
-while nprimes < 21:
+while nprimes < 22:
 	eval_candidates_for_nprimes(nprimes)
 	nprimes+=1

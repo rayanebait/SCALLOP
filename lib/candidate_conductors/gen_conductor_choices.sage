@@ -8,7 +8,7 @@ def next(L, p_above,p_above_conj, nb_primes, prev_seq, next_seq):
 			L=L*(p_above_conj[i+1]**(2*(-k)))
 	return L
 
-def gen_candidates(K, p_above, p_above_conj):
+def gen_candidates(K, p_above, p_above_conj, stop=1000000, G_index=0):
 	nb_primes=len(p_above)
 	print(nb_primes)
 
@@ -26,12 +26,14 @@ def gen_candidates(K, p_above, p_above_conj):
 	F.write(f'{nb_primes}\n')
 
 	prev_seq=G[0]
-	nb_candidates=0
-	first=True
+	i=0
 	for next_seq in G:
-		if first:
-			first=False
+		if i<G_index:
+			i+=1
 			continue
+		if stop==0:
+			break
+
 		L=next(L,p_above, p_above_conj,nb_primes,prev_seq,next_seq)
 		prev_seq=next_seq
 
@@ -44,7 +46,7 @@ def gen_candidates(K, p_above, p_above_conj):
 			if pim:
 				F.write(f'{f_im} {1}')
 				F.write('\n')
-				nb_candidates+=1
+				stop-=1
 			else:
 				F.write(f'{f_im} {0}')
 				F.write('\n')
@@ -52,10 +54,12 @@ def gen_candidates(K, p_above, p_above_conj):
 			if pre:
 				F.write(f'{f_re} {1}')
 				F.write('\n')
-				nb_candidates+=1
+				stop-=1
 			else:
 				F.write(f'{f_re} {0}')
 				F.write('\n')
+		i+=1
+	F.write(f"{i}")
 	F.close()
 
 
@@ -66,8 +70,8 @@ def add_prime_above(p_above, p_above_conj, p):
 	return (p_above, p_above_conj)
 
 
-initial_nb_primes=20
-max_nb_primes=21
+initial_nb_primes=2
+max_nb_primes=3
 
 K.<i>=NumberField(x^2+1)
 p=5
@@ -93,7 +97,7 @@ while nb_primes<max_nb_primes:
 	print(f"\n next: {p}\n")
 	(p_above, p_above_conj)=add_prime_above(p_above, p_above_conj, p)
 
-	gen_candidates(K, p_above, p_above_conj)
+	gen_candidates(K, p_above, p_above_conj, stop=10000)
 	print(split_primes)
 
 	p=p.next_prime()

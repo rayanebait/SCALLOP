@@ -50,77 +50,63 @@ amscd, geometry, xspace, enumerate, mathtools}
 \begin{document}
 \title{Explication du code}
 \maketitle
-\section{produit d'idéaux}
-(Cette partie est finalement pas utilisée telle quelle, la fonctionnalité étant implémentée en sage)
-Si $I=(a, b+id)$ et $J=(c, f+ig)$ on les représente via une forme normale de hermite:
-\[
-    I=\begin{pmatrix}a & b\\ 0&d\end{pmatrix}
-\]
-\[
-    J=\begin{pmatrix}c & f\\ 0&g\end{pmatrix}
-\]
-
-Pour calculer leur produit, on regarde l'idéal produit 
-\[
-    IJ=(ac, af+iag, cb+icd, bf-dg+i(cd+bg))
-\]
-Qu'on représente en:
-\[
-    IJ=\begin{pmatrix}ac & af & cb & bf-dg\\
-        0 & ag & cd & cd+bg\\
-    \end{pmatrix}
-\]
-Dont on calcule la forme normale de hermite pour obtenir 
-\[IJ=(N(IJ), x+if)\]
-
-(Tout est transposé dans le code car FLINT effectue la réduction 
-hnf sur les lignes)
 
 \section{Calcul du réseau de relations}
 Les idéaux d'ordres, le calcul de produit et la composition de forme quadratiques n'étant pas implémentés 
-en sage. Je l'ai fait en C à l'aide de FLINT.
-On utilise l'algorithme de Pohlig-Hellman couplé à rho-pollard. L'implémentation 
+en sage. Je l'ai fait en C à l'aide de FLINT. Je n'étais pas conscient du plongement dans le tore.
+J'utilise l'algorithme de Pohlig-Hellman couplé à un rho-pollard basique. L'implémentation 
 est faite à l'aide du module qfb de FLINT qui permet de calculer dans le groupe de classe de 
 formes quadratiques binaires de discriminant donné.
 
 \section{Paramètres}
 Les candidats sont calculés à l'aide de 
-gen\_conductor\_choices dans lib/ideals. Chaque 
+gen\_conductor\_choices dans lib/candidate\_conductors. Chaque 
 fichier candidate\_conductorsN contient les 
 candidats pour les N premiers nombres 
 premiers décomposés dans $\Z[i]$. L'évaluation 
 de chaque candidats est éffectué par 
 eval\_candidate présent dans lib/eval\_candidate
-à l'aide de ECM avec abandon et 30 processus 
-en parallèle qui sont terminés au bout d'une seconde 
+à l'aide de ECM avec abandon et plusieurs processus 
+en parallèle qui sont terminés au bout d'une demi seconde 
 si ils n'ont pas finis. 
 
-\subsection{Paramètre de 40 et 80 bits}
-Pour $n_1+n_2=11$ j'ai pris 
-\[\alpha=3014688773870022715669219i + 73018318326246924528693954\]
-avec $f\approx 2^{81}$ et $f- (\frac{-1}{f})$ 
-qui est $2^{30}$-lisse. J'ai aussi pris 
-\[p=31392239785933786038660665604566479\]\[=cL-1\]
- avec $c=16$.
-Pour $n_1+n_2=17$ j'ai pris 
-\[\alpha=606346906079138499752787264655000342496041920427i\]
-\[~~+ 375198466882833042822684243162077125238505408858\]
-avec $f\approx 2^{161}$ et $f-(\frac{-1}{f})$
-qui est $2^{36}$-lisse. J'ai aussi pris \[
-    p=873224592283478872608679328148373760813822474964590896670059
+\subsection{Des paramètres}
+Les conducteurs, leurs factorisations et d'autres données sont compilées pour la lecture dans:
+\begin{center}
+  lib/eval\_candidates/conductor\_dataN.
+\end{center}
+Le dossier txt regroupe les données utilisées par le code.
+\subsection{Paramètres trouvés}
+Pour $n_1+n_2=3$ il y'a $\alpha=109i-482$ ou $f-1=2*2*3*3*3$ (pour un exemple jouet).\\
+Pour $n_1+n_2=14$ j'ai trouvé
+\[\alpha=18359253140637317346421*i 54350031371973551487179\]
+avec $f\approx 2^{74}$ et $f- (\frac{-1}{f})$ 
+qui est $2^{15}$-lisse et $L(f,1/2)\approx 2**20$! J'ai pris
+\[p=
+121454872411527926661684817909284338242094481799
+\]\[=cL-1\]
+ avec $c=40$.
+Pour $n_1+n_2=19$ j'ai trouvé
+\[\alpha=3787463183160155300151628190651699i
 \]
-\[=cL-1\] avec $c=28$.
+\[~~+5486016354070929595610591952770909
+\]
+avec $f\approx 2^{111}$ et $f-(\frac{-1}{f})$
+qui est $2^{24}$-lisse. J'ai aussi pris \[
+    p= 795043022950760821454708646162181472418166063423885615171529662506131
+    \]
+\[=cL+1\] avec $c=26$.
 
-La table des logs discrets est txt/dlogs\_N\_bits.md.
+La table des logs discrets est txt/dlogs\_N\_primes.md.
 
 \section{Commandes}
 Pour lancer le calcul du réseau de relation, depuis 
 le dossier Clib:
 \begin{itemize}
     \item make
-    \item ./bin/lattice\_relations\\ ../txt/conductor\_N\_bits.md ../txt/sqrts\_M\_primes.md ../txt/dlogs\_N\_bits.md
+    \item ./bin/lattice\_relations\\ ../txt/conductor\_N\_primes.md ../txt/sqrts\_N\_primes.md ../txt/dlogs\_N\_primes.md
 \end{itemize}
 
-Pour $N=40$ mettre $M=11$ et pour $N=80$ mettre $M=17$.
+Actuellement, seulement $N=14,19,20$ sont utilisables (il y'a d'autres bons candidats pour $N=21,24$)
 
 \end{document}

@@ -1,3 +1,11 @@
+from argparse import ArgumentParser
+parser=ArgumentParser()
+
+parser.add_argument('-v', '--verbose', action='store_true')
+parser.add_argument('-n', '--nbprimes', default='14')
+
+args=parser.parse_args()
+
 def FullRepresentInteger(M, p, trials=0):
 	m_=floor(float(sqrt(4*M/p)))
 	z_=ZZ.random_element(-m_, m_)
@@ -20,11 +28,12 @@ def FullRepresentInteger(M, p, trials=0):
 		return FullRepresentInteger(M,p,trials+1)
 	return (x_, y_, z_, t_)
 
+nb_primes=Integer(args.nbprimes)
 
-conductor=80
-nb_primes=17
+cond_file="../../txt/conductor_"+str(nb_primes)+"_primes.md"
+if args.verbose:
+	print(f"Reading conductor from {cond_file}\n")
 
-cond_file="../../txt/conductor_"+str(conductor)+"_bits.md"
 F=open(cond_file, "r")
 F.readline()
 f=Integer(F.readline())
@@ -43,16 +52,22 @@ L1=prod(primes[1:])**2
 L2=5
 L=L1*L2
 
-prime_file="../../txt/prime_"+str(conductor)+"_bits.md"
+prime_file="../../txt/prime_"+str(nb_primes)+"_primes.md"
+if args.verbose:
+	print(f"Reading characteristic from {prime_file}\n")
+
 G=open(prime_file, "r")
 p=Integer(G.readline())
 G.close()
 
 
-
-print("p =",p,"\nf =",f)
+if args.verbose:
+	print(f"Startng endomorphism generation with FullRepresentInteger\n")
 l_0=2
 while l_0<100:
+	if args.verbose:
+		print(f"Trying with l_0={l_0}")
+
 	h=floor(float(log(p/f)/log(l_0)))+1
 	M=(l_0**h)*f
 
@@ -65,9 +80,13 @@ while l_0<100:
 	else:
 		break
 
-print(endo, l_0, h)
+if args.verbose:
+	print(f"Found endomorphism {endo}/2 of norm M=(l_0**h)*f={l_0}**{h}*{f}\n")
 
-endo_file="../../txt/endo_"+str(conductor)+"_bits.md"
+endo_file="../../txt/endo_"+str(nb_primes)+"_primes.md"
+if args.verbose:
+	print(f"Writing endomorphism to file {endo_file}\n")
+
 K=open(endo_file,"w")
 for coeff in endo:
 	K.write(f"{coeff}\n")
