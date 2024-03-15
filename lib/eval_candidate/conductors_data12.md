@@ -1,26 +1,26 @@
 Number of primes used: 12
 297459825143886089 is O(197273)-smooth:
 	 [2, 2, 2, 79, 9769, 61129, 788159]
-297459825143886089 has size 2**58 and 2**19-smooth with L(f,1/2) about 2**17
+297459825143886089 has size 2^58 and 2^19-smooth with L(f,1/2) about 2^17
 
 84328451879792201 is O(154511)-smooth:
 	 [2, 2, 2, 5, 5, 127, 937, 2693, 1315723]
-84328451879792201 has size 2**56 and 2**20-smooth with L(f,1/2) about 2**17
+84328451879792201 has size 2^56 and 2^20-smooth with L(f,1/2) about 2^17
 
 1814107218036295321 is O(278511)-smooth:
 	 [2, 2, 2, 3, 3, 5, 18191, 182957, 1514101]
-1814107218036295321 has size 2**60 and 2**20-smooth with L(f,1/2) about 2**18
+1814107218036295321 has size 2^60 and 2^20-smooth with L(f,1/2) about 2^18
 
 169765759425226121 is O(177024)-smooth:
 	 [2, 2, 2, 5, 13, 17, 1019, 94847, 198701]
-169765759425226121 has size 2**57 and 2**17-smooth with L(f,1/2) about 2**17
+169765759425226121 has size 2^57 and 2^17-smooth with L(f,1/2) about 2^17
 
 3079308915628043641 is O(307719)-smooth:
 	 [2, 2, 2, 3, 5, 61, 859, 676909, 723467]
-3079308915628043641 has size 2**61 and 2**19-smooth with L(f,1/2) about 2**18
+3079308915628043641 has size 2^61 and 2^19-smooth with L(f,1/2) about 2^18
 
 3079308915628043641 is O(307719)-smooth:
 	 [2, 2, 2, 3, 5, 61, 859, 676909, 723467]
-3079308915628043641 has size 2**61 and 2**19-smooth with L(f,1/2) about 2**18
+3079308915628043641 has size 2^61 and 2^19-smooth with L(f,1/2) about 2^18
 
 finished at line: 240

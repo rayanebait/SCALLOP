@@ -1,30 +1,30 @@
 Number of primes used: 13
 400213480719552936229 is O(752325)-smooth:
 	 [2, 2, 3, 3, 13, 421, 653, 580663, 5357059]
-400213480719552936229 has size 2**68 and 2**22-smooth with L(f,1/2) about 2**19
+400213480719552936229 has size 2^68 and 2^22-smooth with L(f,1/2) about 2^19
 
 217100154781681612549 is O(673869)-smooth:
 	 [2, 2, 3, 23, 89, 52511, 140677, 1196431]
-217100154781681612549 has size 2**67 and 2**20-smooth with L(f,1/2) about 2**19
+217100154781681612549 has size 2^67 and 2^20-smooth with L(f,1/2) about 2^19
 
 358877335537728315541 is O(737734)-smooth:
 	 [2, 2, 3, 3, 5, 337, 7841, 779347, 968147]
-358877335537728315541 has size 2**68 and 2**19-smooth with L(f,1/2) about 2**19
+358877335537728315541 has size 2^68 and 2^19-smooth with L(f,1/2) about 2^19
 
 135091348747715898331 is O(618436)-smooth:
 	 [2, 2, 139, 409, 23057, 23087, 1115987]
-135091348747715898331 has size 2**66 and 2**20-smooth with L(f,1/2) about 2**19
+135091348747715898331 has size 2^66 and 2^20-smooth with L(f,1/2) about 2^19
 
 111819969166047798709 is O(597575)-smooth:
 	 [2, 2, 3, 3, 3, 3, 3, 13, 239, 877, 48589, 868909]
-111819969166047798709 has size 2**66 and 2**19-smooth with L(f,1/2) about 2**19
+111819969166047798709 has size 2^66 and 2^19-smooth with L(f,1/2) about 2^19
 
 111819969166047798709 is O(597575)-smooth:
 	 [2, 2, 3, 3, 3, 3, 3, 13, 239, 877, 48589, 868909]
-111819969166047798709 has size 2**66 and 2**19-smooth with L(f,1/2) about 2**19
+111819969166047798709 has size 2^66 and 2^19-smooth with L(f,1/2) about 2^19
 
 208763787330248882261 is O(669121)-smooth:
 	 [2, 2, 5, 37, 239, 1601, 198013, 3723407]
-208763787330248882261 has size 2**67 and 2**21-smooth with L(f,1/2) about 2**19
+208763787330248882261 has size 2^67 and 2^21-smooth with L(f,1/2) about 2^19
 
 finished at line: 270
