@@ -1,56 +1,75 @@
-
-def FullRepresentInteger(M, p, trials=0, s=0):
+def FullRepresentInteger(M, p, trials=0):
 	m_=floor(float(sqrt(4*M/p)))
-	z_=randrange(-m_, m_)
-	s+=1
-	seed(s)
+	z_=ZZ.random_element(-m_, m_)
 
-	m__=floor(float( sqrt(4*M/p-z_**2) ))
-	t_=randrange(-m__, m__)
-	s+=1
-	seed(s)
+	m__=floor(float( sqrt( (4*M/p) - z_**2) ))
+	t_=ZZ.random_element(-m__, m__)
 
 	M_=4*M-p*((z_)**2+(t_)**2)
 
-	#Test if M_=1 mod 4
-	is_sum=((M_&3)==1)
-	if not is_sum:
-		if trials>1000:
+	try:
+		x_,y_=two_squares(M_)
+	except ValueError:
+		if trials>100:
 			return
-		return FullRepresentInteger(M,p,trials+1, s)
-
-	x_,y_=two_squares(M_)
+		return FullRepresentInteger(M,p,trials+1)
 
 	if (x_-t_)&1!=0 or (z_-y_)&1!=0:
-		if trials>1000:
+		if trials>100:
 			return
-		return FullRepresentInteger(M,p,trials+1, s)
+		return FullRepresentInteger(M,p,trials+1)
 	return (x_, y_, z_, t_)
 
 
+conductor=80
+nb_primes=17
 
-L1=prod([p for p in range(5, 100) if p&3==1 and p in Primes()])**2
+cond_file="../../txt/conductor_"+str(conductor)+"_bits.md"
+F=open(cond_file, "r")
+F.readline()
+f=Integer(F.readline())
+F.close()
+
+primes=[]
+p=5
+i=0
+while i<nb_primes:
+	if p&3==1:
+		primes.append(p)
+		i+=1
+	p=p.next_prime()
+
+L1=prod(primes[1:])**2
 L2=5
 L=L1*L2
 
-p=1010000001983298392831832983928328938293829328932
-f=3014688773870022715669219
+prime_file="../../txt/prime_"+str(conductor)+"_bits.md"
+G=open(prime_file, "r")
+p=Integer(G.readline())
+G.close()
 
-h=floor(float(log(p/f)/log(97)))+1
 
-M=(97**h)*f
 
-print(float(sqrt(4*M/p)))
+print(p,f)
+l_0=2
+while l_0<100:
+	h=floor(float(log(p/f)/log(l_0)))+1
+	M=(l_0**h)*f
 
-m_=floor(float(sqrt(4*M/p)))
-z_=ZZ.random_element(-m_,m_)
+	endo=FullRepresentInteger(M,p)
 
-m__=floor(float( sqrt(4*M/p-z_**2) ))
-t_=ZZ.random_element(-m__,m__)
+	if endo==None:
+		l_0=l_0.next_prime()
+		while l_0&3==1:
+			l_0=l_0.next_prime()
+	else:
+		break
 
-M_=4*M-p*((z_)**2+(t_)**2)
+print(endo, l_0, h)
 
-print(M_, z_, t_, m_, m__)
-
-is_sum=(((M_)&3))
-print(is_sum)
+endo_file="../../txt/endo_"+str(conductor)+"_bits.md"
+K=open(endo_file,"w")
+for coeff in endo:
+	K.write(f"{coeff}\n")
+K.write(f"{l_0}\n{h}\n")
+K.close()
