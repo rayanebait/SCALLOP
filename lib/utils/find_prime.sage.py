@@ -4,7 +4,7 @@
 from sage.all_cmdline import *   # import sage library
 
 _sage_const_0 = Integer(0); _sage_const_1 = Integer(1)
-filename="../../txt/conductor_80_bits.md"
+filename="../../txt/conductor_40_bits.md"
 
 f=open(filename, "r")
 f.readline()
@@ -13,7 +13,7 @@ conductor=Integer(f.readline())
 
 f.close()
 
-filename="../ideals/candidate_conductors16.md"
+filename="../ideals/candidate_conductors10.md"
 g=open(filename, "r")
 line=_sage_const_0 
 
