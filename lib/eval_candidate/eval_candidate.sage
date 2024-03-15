@@ -1,11 +1,12 @@
 from multiprocessing import Process, Pipe 
 import time
+
 def LBound(x,a=1/2,c=1): return exp(c*( (ln(x)**a) * (ln(ln(x))**(1-a)) ))
 
 def is_L_smooth(factors, L):
 	is_smooth=True
 	for i in factors:
-		if i>5*L:
+		if i>10*L:
 			is_smooth=False
 			break
 	return is_smooth
@@ -19,7 +20,7 @@ def fac(cpr,fps):
 		L=floor(float(LBound(c)))
 		#print("Factoring")
 
-		if c%4==1:
+		if c&3==1:
 			factors=ecm.factor(c-1,None)
 		else:
 			factors=ecm.factor(c+1,None)
@@ -28,7 +29,7 @@ def fac(cpr,fps):
 
 
 def eval_candidates_for_nprimes(nprimes):
-	name="../ideals/candidate_conductors"+str(nprimes)+".md"
+	name="../candidate_conductors/candidate_conductors"+str(nprimes)+".md"
 	F=open(name, "r", encoding="utf-8")
 
 	nprimes=Integer(F.readline())
@@ -58,7 +59,7 @@ def eval_candidates_for_nprimes(nprimes):
 	line=0
 	eof=False
 	while not eof:
-		line+=30
+		line+=2*nb_candidates
 		nb_factored+=1
 		#Multiple loops for readability, doesn't impact perf here
 
@@ -85,12 +86,12 @@ def eval_candidates_for_nprimes(nprimes):
 				continue
 			pipes_cand[i][1].send(fs[i][0])
 
-		time.sleep(float(0.5))
+		time.sleep(float(0.3))
 		for i in range(nb_candidates):
 		#Check only if candidate was prime
 			if fs[i][1]==0:
 				continue
-			#timeout at 0.3 secs
+			#timeout at 0.5 secs
 			if pipes_fac[i][0].poll():
 				#check if process nb i terminated
 				factors=pipes_fac[i][0].recv()
@@ -163,13 +164,18 @@ def eval_candidates_for_nprimes(nprimes):
 	G=open(out_file_name, "w", encoding="utf-8")
 	G.write(f'Number of primes used: {nprimes}\n')
 	for candidate in candidates:
+		flog=floor(float(log(candidate[1])/log(2)))
+		faclog=floor(float(log(candidate[0][-1])/log(2)))
+		Llog=floor(float(log(candidate[2])/log(2)))
+
 		G.write(f"{candidate[1]} is O({candidate[2]})-smooth:\n\t {candidate[0]}\n")
+		G.write(f"{candidate[1]} has size 2**{flog} and 2**{faclog}-smooth with L(f,1/2) about 2**{Llog}\n\n")
 	G.write(f"finished at line: {line}\n")
 	
 	G.close()
 
-nprimes=24
+nprimes=20
 
-while nprimes < 25:
+while nprimes < 21:
 	eval_candidates_for_nprimes(nprimes)
 	nprimes+=1

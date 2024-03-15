@@ -1,21 +1,26 @@
-filename="../../txt/conductor_40_bits.md"
+from argparse import ArgumentParser
+parser=ArgumentParser()
 
-f=open(filename, "r")
-f.readline()
+parser.add_argument('-c','--conductor')
+parser.add_argument('-n','--nbprimes')
 
-conductor=Integer(f.readline())
+args=parser.parse_args()
 
-f.close()
+conductor=Integer(args.conductor)
+nb_primes=Integer(args.nbprimes)
 
-filename="../ideals/candidate_conductors10.md"
+
+filename="../candidate_conductors/candidate_conductors"+str(nb_primes)+".md"
 g=open(filename, "r")
 line=0
 
-n=abs(Integer(g.readline().split(" ")[0]))
+nim=abs(Integer(g.readline().split(" ")[0]))
+nre=abs(Integer(g.readline().split(" ")[0]))
 
-while n!=conductor:
-	n=abs(Integer(g.readline().split(" ")[0]))
-	line+=1
+while nim!=conductor and nre!=conductor:
+	nim=abs(Integer(g.readline().split(" ")[0]))
+	nre=abs(Integer(g.readline().split(" ")[0]))
+	line+=2
 
 print(line)
-print(conductor,n)
+print(conductor,nim, nre)
