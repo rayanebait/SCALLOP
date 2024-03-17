@@ -7,6 +7,7 @@ _sage_const_0 = Integer(0); _sage_const_2 = Integer(2)
 from argparse import ArgumentParser
 parser=ArgumentParser()
 
+parser.add_argument('-v','--verbose', action='store_true')
 parser.add_argument('-c','--conductor')
 parser.add_argument('-n','--nbprimes')
 
@@ -20,6 +21,9 @@ filename="../candidate_conductors/candidate_conductors"+str(nb_primes)+".md"
 g=open(filename, "r")
 line=_sage_const_0 
 
+if args.verbose:
+	print(f"Searching conductor {conductor} in file {filename}\n")
+
 nim=abs(Integer(g.readline().split(" ")[_sage_const_0 ]))
 nre=abs(Integer(g.readline().split(" ")[_sage_const_0 ]))
 
@@ -28,6 +32,8 @@ while nim!=conductor and nre!=conductor:
 	nre=abs(Integer(g.readline().split(" ")[_sage_const_0 ]))
 	line+=_sage_const_2 
 
-print(line)
-print(conductor,nim, nre)
+if args.verbose:
+	print(f"Found conductor at line {line} with:\n\t {nre}\n\t {nim}\n")
+else:
+	print(conductor,"\n",nim,"\n", nre,"\n")
 

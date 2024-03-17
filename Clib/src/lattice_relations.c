@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     /*Here l_0 is of order (f-(-1/f))/2 for the 40/80 bits parameters
     so generates the class group*/
 
-    ulong gen_ind = 0;
+    ulong gen_ind = 1;
     qfb_set(l_0, qfbs+gen_ind);
     qfb_reduce(l_0, l_0, D);
 

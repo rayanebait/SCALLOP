@@ -6,12 +6,14 @@ parser.add_argument('-n', '--nbprimes', default='14')
 
 args=parser.parse_args()
 
+proof.arithmetic(False)
+
 def FullRepresentInteger(M, p, trials=0):
 	m_=floor(float(sqrt(4*M/p)))
-	z_=ZZ.random_element(-m_, m_)
+	z_=ZZ.random_element(-m_, m_+1)
 
 	m__=floor(float( sqrt( (4*M/p) - z_**2) ))
-	t_=ZZ.random_element(-m__, m__)
+	t_=ZZ.random_element(-m__, m__+1)
 
 	M_=4*M-p*((z_)**2+(t_)**2)
 

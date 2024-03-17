@@ -70,8 +70,8 @@ def add_prime_above(p_above, p_above_conj, p):
 	return (p_above, p_above_conj)
 
 
-initial_nb_primes=25
-max_nb_primes=26
+initial_nb_primes=2
+max_nb_primes=4
 
 K.<i>=NumberField(x^2+1)
 p=5
@@ -97,7 +97,7 @@ while nb_primes<max_nb_primes:
 	print(f"\n next: {p}\n")
 	(p_above, p_above_conj)=add_prime_above(p_above, p_above_conj, p)
 
-	gen_candidates(K, p_above, p_above_conj, stop=50000)
+	gen_candidates(K, p_above, p_above_conj, stop=100000)
 	print(split_primes)
 
 	p=p.next_prime()
