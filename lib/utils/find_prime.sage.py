@@ -23,6 +23,7 @@ line=_sage_const_0
 
 if args.verbose:
 	print(f"Searching conductor {conductor} in file {filename}\n")
+g.readline()
 
 nim=abs(Integer(g.readline().split(" ")[_sage_const_0 ]))
 nre=abs(Integer(g.readline().split(" ")[_sage_const_0 ]))

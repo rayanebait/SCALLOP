@@ -1,30 +1,17 @@
+from sage.rings.finite_rings.integer_mod import square_root_mod_prime
 from sage.schemes.elliptic_curves.weierstrass_morphism import *
+from sage.schemes.elliptic_curves.hom_composite import EllipticCurveHom_composite hom_comp
 from argparse import ArgumentParser
-from sage.schemes.elliptic_curves.hom_frobenius import EllipticCurveHom_frobenius
-
-class EvalIsogSum:
-	def __init__(self,precurve, postcurve, basis=[], coeffs=[1,1,1,1]):
-		self.precurve=precurve
-		self.postcurve=postcurve
-		self.basis=basis
-		self.coeffs=coeffs
-
-	def fill_basis(self, basis):
-		self.basis=basis
-	def fill_coeffs(self, coeffs):
-		self.coeffs=coeffs
-	def evaluate(self, P):
-		return sum([self.coeffs[i]*self.basis[j](P) for j in range(len(self.basis))])
 
 
 proof.arithmetic(False)
 
 parser = ArgumentParser()
-
 parser.add_argument('-v', '--verbose', action='store_true')
 parser.add_argument('-n', '--nbprimes', default='14')
-
 args = parser.parse_args()
+
+
 n=args.nbprimes
 if n!='3' and n!='14' and n!='19' and n!='20' and n!='26':
 	raise SystemExit(f"Currently supports 14, 19, 20 and 26 primes parameters, not {n}\n")
@@ -50,6 +37,7 @@ R.<x>=K[]
 FracR=FractionField(R)
 
 conductor=Integer(O.readline())
+
 alpha2=conductor
 alpha1=Integer(O.readline())
 
@@ -75,23 +63,20 @@ E0=EllipticCurve(K, [1,0])
 E0.set_order((p+1)**2)
 iota=WeierstrassIsomorphism(E0, [-J,0,0,0], E0)
 
-alpha1_l=1
-alpha2_l=1
-
 
 	
 #Shouldn't be heavy
-def compute_kernel_sum(a1_l, a2_l, l, E0):
+#def compute_kernel_sum(a1_l, a2_l, l, E0):
 
-	if a1_l==0:
-		return E0.division_polynomial(a2_l)(-x)
-	if a2_l==0:
-		return E0.division_polynomial(a1_l)
+	#if a1_l==0:
+		#return E0.division_polynomial(a2_l)(-x)
+	#if a2_l==0:
+		#return E0.division_polynomial(a1_l)
 
 	#ADD a1_l==a2_l CASE
 
-	psi_a1_l=[R(E0.division_polynomial(a1_l+i, x)) if a1_l+i!=0 else R(0) for i in IntegerRange(-2,3)]
-	psi_a2_l=[R(E0.division_polynomial(a2_l+i, x)(-x)) if a2_l+i!=0 else R(0) for i in IntegerRange(-2,3)]
+	#psi_a1_l=[R(E0.division_polynomial(a1_l+i, x)) if a1_l+i!=0 else R(0) for i in IntegerRange(-2,3)]
+	#psi_a2_l=[R(E0.division_polynomial(a2_l+i, x)(-x)) if a2_l+i!=0 else R(0) for i in IntegerRange(-2,3)]
 
 	#Mult by a1_l
 	#x_1=x-(psi_a1_l[1]*psi_a1_l[3])/psi_a1_l[2]**2
@@ -106,60 +91,67 @@ def compute_kernel_sum(a1_l, a2_l, l, E0):
 	#x_sum=-x_1-x_2+lambd
 	#y_sum=-y_1-lambd*(x_sum-x_1)
 
-	left_x_summand=(psi_a2_l[2]**2)*(x*(psi_a1_l[2]**2)-psi_a1_l[1]*psi_a1_l[3])
-	right_x_summand=(psi_a1_l[2]**2)*(-x*(psi_a2_l[2]**2)-psi_a2_l[1]*psi_a2_l[3])
+	#left_x_summand=(psi_a2_l[2]**2)*(x*(psi_a1_l[2]**2)-psi_a1_l[1]*psi_a1_l[3])
+	#right_x_summand=(psi_a1_l[2]**2)*(-x*(psi_a2_l[2]**2)-psi_a2_l[1]*psi_a2_l[3])
 
 	#left_y_summand=(psi_a1_l[4]*psi_a1_l[1]**2-psi_a1_l[0]*psi_a1_l[3]**2)*(4*psi_a2_l[2]**3)
 	#right_y_summand=(psi_a2_l[4]*psi_a2_l[1]**2-psi_a2_l[0]*psi_a2_l[3]**2)*(4*psi_a1_l[2]**3)
 
-	return left_x_summand-right_x_summand
+	#return left_x_summand-right_x_summand
 
-
+O=E0(0,0)-E0(0,0)
 print(factor(norm))
 
-i=0
-for l in primes:
-	print(f"Prime:{l}\n")
-	if i>3:
-		break
-	i+=1
 
-	alpha1_l=Mod(alpha1,l)
-	alpha2_l=Mod(alpha2,l)
-	psi_l=E0.division_polynomial(l)
+
+def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm):
+	i=0
+	gen_of_l_part=[]
+	isogeny_chain=[]
+	curve_chain=[]
+	Ei=E0
+	for l in primes:
+		print(f"Prime:{l}\n")
+		if i>3:
+			break
+		i+=1
+	
+		#psi_l=E0.division_polynomial(l)
+		P, Q=E0.torsion_basis(l)
+		sqrt_l=square_root_mod_prime(Mod(-1, l),l)
+		if sqrt_l==0:
+			a=E0.scalar_multiplication(alpha1-trace)
+			b=E0.scalar_multiplication(alpha2)
+		else :
+			a=E0.scalar_multiplication(alpha1-floor(norm/sqrt_l))
+			b=E0.scalar_multiplication(alpha2)
+
+		Pi=a(P)+iota*b(P)
+		if (a(P_)+iota*b(P_))==O:
+			gens_of_l_part.append(Pi)
+		else:
+			Qi=a(Q)+iota*b(Q)
+			if (a(Qi)+iota*b(Qi))==O:
+				gens_of_l_part.append(Qi)
+
+	for i in range(len(primes)):
+		P=gen_of_l_part[i]
+		for phi in isogeny_chain:
+			P=phi(P)
+
+		phi_i=EllipticCurveIsogeny(curve_chain[i],P)
+		curve_chain.append(phi_i.codomain())
+		isogeny_chain.append(phi_i)
+
+	phi_L1L2=hom_comp.from_factors(isogeny_chain, E0)
+
+	
 
 	#Rbar.<xbar>=R.quotientt(psi_l)
 	#frob_l=Rbar.lift(xbar**(p*p))-x
 	#print(frob_l)
 
-	ker=compute_kernel_sum(alpha1_l, alpha2_l, l, E0)
-	#print(psi_l)
-	print("l-torsion part in the kernel: ", gcd(ker, psi_l))
-
-	#phi=EllipticCurveIsogeny(E0, ker*(ker.coefficients()[-1]**(-1)))
-
-	#roots=ker.roots()
-	#a1_l_mul=E0.scalar_multiplication(alpha1_l)
-	#a2_l_mul=E0.scalar_multiplication(alpha2_l)
-
-	#for root in roots:
-		#try:
-			#P=E0.lift_x(root[0])
-			#print(phi(P))
-			#print(a1_l_mul(P)[0]==a2_l_mul(iota(P)))
-
-		#except ValueError:
-			#continue
+	#ker=compute_kernel_sum(alpha1_l, alpha2_l, l, E0)
+	#print("l-torsion part in the kernel: ", gcd(ker, psi_l))
 	
-
 F.close()
-
-
-
-
-#P=E0.lift_x(4)
-#Q=iota(P)
-#E0.division_polynomial(10,x)
-
-
-
