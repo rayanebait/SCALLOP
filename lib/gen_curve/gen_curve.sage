@@ -156,6 +156,7 @@ def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm):
 		isogeny_chain.append(phi_i)
 		isogeny_chain_bar.append(phi_i_bar)
 
+	#should only compute the kernel 
 	phi_L1L2=hom_comp.from_factors(isogeny_chain, E0)
 	phi_L1bar=(hom_comp.from_factors(isogeny_chain_bar, E0)).dual()
 
