@@ -70,8 +70,8 @@ def add_prime_above(p_above, p_above_conj, p):
 	return (p_above, p_above_conj)
 
 
-initial_nb_primes=13
-max_nb_primes=14
+initial_nb_primes=25
+max_nb_primes=26
 
 K.<i>=NumberField(x^2+1)
 p=5

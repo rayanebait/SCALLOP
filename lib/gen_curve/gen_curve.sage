@@ -1,30 +1,17 @@
+from sage.rings.finite_rings.integer_mod import square_root_mod_prime
 from sage.schemes.elliptic_curves.weierstrass_morphism import *
+from sage.schemes.elliptic_curves.hom_composite import EllipticCurveHom_composite as hom_comp
 from argparse import ArgumentParser
-from sage.schemes.elliptic_curves.hom_frobenius import EllipticCurveHom_frobenius
-
-class EvalIsogSum:
-	def __init__(self,precurve, postcurve, basis=[], coeffs=[1,1,1,1]):
-		self.precurve=precurve
-		self.postcurve=postcurve
-		self.basis=basis
-		self.coeffs=coeffs
-
-	def fill_basis(self, basis):
-		self.basis=basis
-	def fill_coeffs(self, coeffs):
-		self.coeffs=coeffs
-	def evaluate(self, P):
-		return sum([self.coeffs[i]*self.basis[j](P) for j in range(len(self.basis))])
 
 
 proof.arithmetic(False)
 
 parser = ArgumentParser()
-
 parser.add_argument('-v', '--verbose', action='store_true')
 parser.add_argument('-n', '--nbprimes', default='14')
-
 args = parser.parse_args()
+
+
 n=args.nbprimes
 if n!='3' and n!='14' and n!='19' and n!='20' and n!='26':
 	raise SystemExit(f"Currently supports 14, 19, 20 and 26 primes parameters, not {n}\n")
@@ -50,6 +37,7 @@ R.<x>=K[]
 FracR=FractionField(R)
 
 conductor=Integer(O.readline())
+
 alpha2=conductor
 alpha1=Integer(O.readline())
 
@@ -72,94 +60,111 @@ while i<nb_primes:
 
 
 E0=EllipticCurve(K, [1,0])
-E0.set_order((p+1)**2)
+#(x,y)->(-x, iy)
 iota=WeierstrassIsomorphism(E0, [-J,0,0,0], E0)
 
-alpha1_l=1
-alpha2_l=1
-
 
 	
-#Shouldn't be heavy
-def compute_kernel_sum(a1_l, a2_l, l, E0):
-
-	if a1_l==0:
-		return E0.division_polynomial(a2_l)(-x)
-	if a2_l==0:
-		return E0.division_polynomial(a1_l)
-
-	#ADD a1_l==a2_l CASE
-
-	psi_a1_l=[R(E0.division_polynomial(a1_l+i, x)) if a1_l+i!=0 else R(0) for i in IntegerRange(-2,3)]
-	psi_a2_l=[R(E0.division_polynomial(a2_l+i, x)(-x)) if a2_l+i!=0 else R(0) for i in IntegerRange(-2,3)]
-
-	#Mult by a1_l
-	#x_1=x-(psi_a1_l[1]*psi_a1_l[3])/psi_a1_l[2]**2
-	#y_1=(psi_a1_l[4]*psi_a1_l[1]**2-psi_a1_l[0]*psi_a1_l[3]**2)/(4*psi_a1_l[2]**3)
-
-	#Mult by a2_l*iota
-	#x_2=-x-(psi_a2_l[1]*psi_a2_l[3])/psi_a2_l[2]**2
-	#y_2=(psi_a2_l[4]*psi_a2_l[1]**2-psi_a2_l[0]*psi_a2_l[3]**2)/(4*psi_a2_l[2]**3)
-
-	#lambd=((y_2-y_1)/(x_2-x_1))**2
-	
-	#x_sum=-x_1-x_2+lambd
-	#y_sum=-y_1-lambd*(x_sum-x_1)
-
-	left_x_summand=(psi_a2_l[2]**2)*(x*(psi_a1_l[2]**2)-psi_a1_l[1]*psi_a1_l[3])
-	right_x_summand=(psi_a1_l[2]**2)*(-x*(psi_a2_l[2]**2)-psi_a2_l[1]*psi_a2_l[3])
-
-	#left_y_summand=(psi_a1_l[4]*psi_a1_l[1]**2-psi_a1_l[0]*psi_a1_l[3]**2)*(4*psi_a2_l[2]**3)
-	#right_y_summand=(psi_a2_l[4]*psi_a2_l[1]**2-psi_a2_l[0]*psi_a2_l[3]**2)*(4*psi_a1_l[2]**3)
-
-	return left_x_summand-right_x_summand
-
 
 print(factor(norm))
+print(p)
+print(f"p%{5}={p%5}, p%{13}={p%13}\n")
 
-i=0
-for l in primes:
-	print(f"Prime:{l}\n")
-	if i>3:
-		break
-	i+=1
 
-	alpha1_l=Mod(alpha1,l)
-	alpha2_l=Mod(alpha2,l)
-	psi_l=E0.division_polynomial(l)
 
-	#Rbar.<xbar>=R.quotientt(psi_l)
-	#frob_l=Rbar.lift(xbar**(p*p))-x
-	#print(frob_l)
+#Compute the kernel of w_0 by writing it as phi_L1L2*phi_L1^-1_dual and 
+#compute phi_L1 as the chain of phi_li_Ei. Compute an 
+#the kernel of phi_li by computing the kernel of w_0-sqrt_l 
+#as done in SCALLOP below proposition 8 page 11
+def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm):
+	O=E0(0,0)-E0(0,0)
 
-	ker=compute_kernel_sum(alpha1_l, alpha2_l, l, E0)
-	#print(psi_l)
-	print("l-torsion part in the kernel: ", gcd(ker, psi_l))
+	gen_of_l_part=[]
+	gen_of_l_part_bar=[]
+	isogeny_chain=[]
+	isogeny_chain_bar=[]
+	curve_chain=[]
+	curve_chain_bar=[]
 
-	#phi=EllipticCurveIsogeny(E0, ker*(ker.coefficients()[-1]**(-1)))
+	#Compute a generator of the kernel of each E[I_l]
+	for l in primes:
+		print(f"Prime:{l}\n")
+		print(E0.division_field(l))
+	
+		r=0
+		P, Q=E0.torsion_basis(l)
+		sqrt_l=square_root_mod_prime(Mod(-1, l),p=l)
 
-	#roots=ker.roots()
-	#a1_l_mul=E0.scalar_multiplication(alpha1_l)
-	#a2_l_mul=E0.scalar_multiplication(alpha2_l)
+		print(sqrt_l)
+		a_l=E0.scalar_multiplication(alpha1-sqrt_l)
+		b=E0.scalar_multiplication(alpha2)
+		bbar=E0.scalar_multiplication(-alpha2)
+		if sqrt_l==0:
+			a=E0.scalar_multiplication(alpha1-trace)
+		else:
+			#plutot multiplier par l'inverse de sqrt_l mod l ?
+			#w_0=sqrt_l sur E[I] i.e tr(w_0)=sqrt_l+n(alpha)*sqrt_l^-1 mod l?
 
-	#for root in roots:
-		#try:
-			#P=E0.lift_x(root[0])
-			#print(phi(P))
-			#print(a1_l_mul(P)[0]==a2_l_mul(iota(P)))
+			#inv=ZZ(GF(l)(sqrt_l)**(-1))
+			correc=Mod(trace-sqrt_l, l)
+			inv=floor(norm/sqrt_l)
+			a=E0.scalar_multiplication(alpha1-correc)
 
-		#except ValueError:
-			#continue
+		P_=a(P)+(iota*b)(P)
+		if (a_l(P_)+(iota*b)(P_))!=O:
+			r+=1
+			Q_=a(Q)+(iota*b)(Q)
+			if (a_l(Q_)+(iota*b)(Q_))!=O:
+				raise RuntimeError(f"Curve Generation failed: Couldn't find generator for E[L1L2], round {r}, prime {l}\n")
+			gen_of_l_part.append(Q_)
+		else:
+			gen_of_l_part.append(P_)
+
+		P_bar=a(P)+(iota*bbar)(P)
+		if (a_l(P_bar)+(iota*bbar)(P_bar))!=O:
+			Q_bar=a(Q)+(iota*bbar)(Q)
+			if (a_l(Q_bar)+(iota*bbar)(Q_bar))!=O:
+				raise RuntimeError("Curve Generation failed: Couldn't find generator for E[L1]\n")
+			gen_of_l_part_bar.append(Q_bar)
+		else:
+			gen_of_l_part_bar.append(P_bar)
+
+
+	phi_5=EllipticCurveIsogeny(E0,gen_of_l_part[0])
+	print(phi_5)
+	curve_chain.append(phi_5.codomain())
+	isogeny_chain.append(phi_5)
+	curve_chain_bar.append(E0)
+
+	#compute the isogeny factors of phi_L1L2 and phi_L1^-1
+	for i in range(1,len(primes)):
+		P=gen_of_l_part[i]
+		Pbar=gen_of_l_part_bar[i]
+		#push a generator of E0[I_l] through every isogeny to get E_i[I_l]
+		for (phi,phibar) in zip(isogeny_chain, isogeny_chain_bar):
+			P=phi(P)
+			Pbar=phibar(Pbar)
+
+		phi_i=EllipticCurveIsogeny(curve_chain[i-1],P)
+		phi_i_bar=EllipticCurveIsogeny(curve_chain_bar[i-1],Pbar)
+		print(phi_i)
+
+		curve_chain.append(phi_i.codomain())
+		curve_chain_bar.append(phi_i_bar.codomain())
+		isogeny_chain.append(phi_i)
+		isogeny_chain_bar.append(phi_i_bar)
+
+	phi_L1L2=hom_comp.from_factors(isogeny_chain, E0)
+	phi_L1bar=(hom_comp.from_factors(isogeny_chain_bar, E0)).dual()
+
+	w_0=phi_L1bar*phi_L1L2
+
+	print(factor(phi_L1L2.degree()))
+
 	
 
+compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm)
+
+
+
 F.close()
-
-
-
-
-#P=E0.lift_x(4)
-#Q=iota(P)
-#E0.division_polynomial(10,x)
-
-
-

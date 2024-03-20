@@ -65,7 +65,7 @@ G.close()
 
 if args.verbose:
 	print(f"Startng endomorphism generation with FullRepresentInteger\n")
-l_0=2
+l_0=5
 while l_0<100:
 	if args.verbose:
 		print(f"Trying with l_0={l_0}")

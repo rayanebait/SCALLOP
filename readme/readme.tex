@@ -52,8 +52,7 @@ amscd, geometry, xspace, enumerate, mathtools}
 \maketitle
 
 \section{Calcul du réseau de relations}
-Les idéaux d'ordres, le calcul de produit et la composition de forme quadratiques n'étant pas implémentés 
-en sage. Je l'ai fait en C à l'aide de FLINT. Je n'étais pas conscient du plongement dans le tore.
+Je l'ai fait en C à l'aide de FLINT. Je n'étais pas conscient du plongement dans le tore.
 J'utilise l'algorithme de Pohlig-Hellman couplé à un rho-pollard basique. L'implémentation 
 est faite à l'aide du module qfb de FLINT qui permet de calculer dans le groupe de classe de 
 formes quadratiques binaires de discriminant donné.
@@ -67,7 +66,7 @@ premiers décomposés dans $\Z[i]$. L'évaluation
 de chaque candidats est éffectué par 
 eval\_candidate présent dans lib/eval\_candidate
 à l'aide de ECM avec abandon et plusieurs processus 
-en parallèle qui sont terminés au bout d'une demi seconde 
+en parallèle qui sont terminés au bout d'un temps donné 
 si ils n'ont pas finis. 
 
 \subsection{Des paramètres}
@@ -79,23 +78,23 @@ Le dossier txt regroupe les données utilisées par le code.
 \subsection{Paramètres trouvés}
 Pour $n_1+n_2=3$ il y'a $\alpha=109i-482$ ou $f-1=2*2*3*3*3$ (pour un exemple jouet).\\
 Pour $n_1+n_2=14$ j'ai trouvé
-\[\alpha=18359253140637317346421*i 54350031371973551487179\]
+\[\alpha=18359253140637317346421*i+51954880756346626090702\]
 avec $f\approx 2^{74}$ et $f- (\frac{-1}{f})$ 
 qui est $2^{15}$-lisse et $L(f,1/2)\approx 2**20$! J'ai pris
 \[p=
-121454872411527926661684817909284338242094481799
+4435728726000669680627459
 \]\[=cL-1\]
- avec $c=40$.
+ avec $c=36$.
 Pour $n_1+n_2=19$ j'ai trouvé
 \[\alpha=3787463183160155300151628190651699i
 \]
-\[~~+5486016354070929595610591952770909
+\[~~+4029106655575753933813779245328898
 \]
 avec $f\approx 2^{111}$ et $f-(\frac{-1}{f})$
 qui est $2^{24}$-lisse. J'ai aussi pris \[
-    p= 795043022950760821454708646162181472418166063423885615171529662506131
+    p= 148379836973137677914241375224586059
     \]
-\[=cL+1\] avec $c=26$.
+\[=cL-1\] avec $c=12$.
 
 La table des logs discrets est txt/dlogs\_N\_primes.md.
 
@@ -107,6 +106,25 @@ le dossier Clib:
     \item ./bin/lattice\_relations\\ ../txt/conductor\_N\_primes.md ../txt/sqrts\_N\_primes.md ../txt/dlogs\_N\_primes.md
 \end{itemize}
 
-Actuellement, seulement $N=14,19,20$ sont utilisables (il y'a d'autres bons candidats pour $N=21,24$)
+Actuellement, seulement $N=3, 14,19, 20$ sont utilisables (il y'a d'autres bons candidats pour $N=26,27$)\\
+
+
+Depuis le dossier lib:
+\begin{itemize}
+    \item candidate\_conductors et
+    eval\_candidate contiennent les fonctions
+     permettant de générer et évaluer les conducteurs
+\end{itemize}
+Pour les autres, chaque fonction appelée avec $-h$ pour 
+afficher les options. La plupart on $-v$ pour afficher 
+les calculs faits et $-n$ pour faire les calculs sur 
+le conducteur choisi pour $n$ nombres premiers. Parmis 
+ces fonctions:
+\begin{itemize}
+    \item gen\_curve et endo permettent respectivement
+    de générer la courbe et de calculer un endomorphisme
+    de norme $M>p$.
+    \item gen\_prime génère un premier associé à un conducteur 
+\end{itemize}
 
 \end{document}

@@ -24,7 +24,7 @@ while i<nb_primes:
 	p=p.next_prime()
 
 
-L1=prod(primes[1:])**2
+L1=prod(primes[1:])
 L2=5
 L=L1*L2
 
