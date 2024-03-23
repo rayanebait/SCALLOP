@@ -15,7 +15,7 @@ args = parser.parse_args()
 
 n=args.nbprimes
 if n!='3' and n!='14' and n!='19' and n!='20' and n!='26':
-	raise SystemExit(f"Currently supports 14, 19, 20 and 26 primes parameters, not {n}\n")
+	raise SystemExit(f"Currently supports 3, 14, 19, 20 and 26 primes parameters, not {n}\n")
 
 nb_primes=Integer(n)
 
@@ -65,18 +65,17 @@ E0=EllipticCurve(K, [1,0])
 iota=WeierstrassIsomorphism(E0, [-J,0,0,0], E0)
 
 
-	
+
 
 print(factor(norm))
-print(p)
-print(f"p%{5}={p%5}, p%{13}={p%13}\n")
 
 
-
-#Compute the kernel of w_0 by writing it as phi_L1L2*phi_L1^-1_dual and 
-#compute phi_L1 as the chain of phi_li_Ei. Compute an 
-#the kernel of phi_li by computing the kernel of w_0-sqrt_l 
-#as done in SCALLOP below proposition 8 page 11
+"""
+	Compute the kernel of w_0 by writing it as phi_L1L2*phi_L1^-1_dual and 
+	compute phi_L1 as the chain of phi_li_Ei. Compute an 
+	the kernel of phi_li by computing the kernel of w_0-sqrt_l 
+	as done in SCALLOP below proposition 8 page 11.
+"""
 def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm):
 	O=E0(0,0)-E0(0,0)
 
@@ -89,16 +88,17 @@ def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm):
 
 	#Compute a generator of the kernel of each E[I_l]
 	for l in primes:
-		print(f"Prime:{l}\n")
-		print(E0.division_field(l))
+		if args.verbose:
+			print(f"Computing generator for E[I] for I a prime above prime :{l}\n")
 	
 		r=0
 		P, Q=E0.torsion_basis(l)
+		if args.verbose:
+			print(f"Generators for the l-torsion:\n {P}, {Q}\n")
 		sqrt_l=square_root_mod_prime(Mod(-1, l),p=l)
 
-		print(sqrt_l)
-		a_l=E0.scalar_multiplication(alpha1-sqrt_l)
-		b=E0.scalar_multiplication(alpha2)
+		a_l=E0.scalar_multiplication(Mod(alpha1, l), -sqrt_l)
+		b=E0.scalar_multiplication(Mod(alpha2,l))
 		bbar=E0.scalar_multiplication(-alpha2)
 		if sqrt_l==0:
 			a=E0.scalar_multiplication(alpha1-trace)
@@ -109,8 +109,10 @@ def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm):
 			#inv=ZZ(GF(l)(sqrt_l)**(-1))
 			correc=Mod(trace-sqrt_l, l)
 			inv=floor(norm/sqrt_l)
-			a=E0.scalar_multiplication(alpha1-correc)
+			a=E0.scalar_multiplication(alpha1-inv)
 
+		if args.verbose:
+			print(f"Pushing {P} through ")
 		P_=a(P)+(iota*b)(P)
 		if (a_l(P_)+(iota*b)(P_))!=O:
 			r+=1
