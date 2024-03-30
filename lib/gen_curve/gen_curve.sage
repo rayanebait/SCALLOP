@@ -9,7 +9,8 @@ proof.arithmetic(False)
 
 parser = ArgumentParser()
 parser.add_argument('-v', '--verbose', action='store_true')
-parser.add_argument('-n', '--nbprimes', default='14')
+parser.add_argument('-n', '--nbprimes', default='3')
+parser.add_argument('-s', '--samples', default='100')
 args = parser.parse_args()
 
 
@@ -87,32 +88,40 @@ def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm):
 	curve_chain_bar=[]
 
 	#Compute a generator of the kernel of each E[I_l]
-	for l in primes:
+	if args.verbose:
+		print(f"Computing orientation w_0=alpha1+i*alpha2 with \n\
+			\talpha1={alpha1}\n\
+			\talpha2={alpha2}\n\
+			And norm: {factor(norm)}")
+
+	for l in primes[3:]:
 		if args.verbose:
-			print(f"Computing generator for E[I] for I a prime above prime :{l}\n")
+			print(f"\nComputing generator for E[I] for I a prime above prime :{l}\n")
 	
 		r=0
 		P, Q=E0.torsion_basis(l)
 		if args.verbose:
-			print(f"Generators for the l-torsion:\n {P}, {Q}\n")
-		sqrt_l=square_root_mod_prime(Mod(-1, l),p=l)
+			l_mul=E0.scalar_multiplication(l)
+			print(f"Generators for the l-torsion:\n\t{P}, {Q}\n\nWith [l]*{P}={l_mul(P)}\n\nand [l]*{Q}={l_mul(Q)}\n")
+		sqrt_l=square_root_mod_prime(Mod(-1,l),p=l)
 
-		a_l=E0.scalar_multiplication(Mod(alpha1, l), -sqrt_l)
+
+		a_l=E0.scalar_multiplication(Mod(alpha1, l)-sqrt_l)
 		b=E0.scalar_multiplication(Mod(alpha2,l))
-		bbar=E0.scalar_multiplication(-alpha2)
+		bbar=E0.scalar_multiplication(-Mod(alpha2, l))
 		if sqrt_l==0:
-			a=E0.scalar_multiplication(alpha1-trace)
+			a=E0.scalar_multiplication(Mod(alpha1-trace, l))
 		else:
-			#plutot multiplier par l'inverse de sqrt_l mod l ?
-			#w_0=sqrt_l sur E[I] i.e tr(w_0)=sqrt_l+n(alpha)*sqrt_l^-1 mod l?
-
 			#inv=ZZ(GF(l)(sqrt_l)**(-1))
 			correc=Mod(trace-sqrt_l, l)
-			inv=floor(norm/sqrt_l)
-			a=E0.scalar_multiplication(alpha1-inv)
+			inv=norm/sqrt_l
+			a=E0.scalar_multiplication(Mod(alpha1-inv, l))
+			print(f"norm : {norm}")
+			print(f"Trace mod l: {Mod(trace,l)}\n +-sqrt_l: {sqrt_l}, {Mod(-sqrt_l,l)}\n +-inv: {inv}, {Mod(-inv,l)}\n")
+			return
 
 		if args.verbose:
-			print(f"Pushing {P} through ")
+			print(f"Pushing {P} through alpha1+ialpha2")
 		P_=a(P)+(iota*b)(P)
 		if (a_l(P_)+(iota*b)(P_))!=O:
 			r+=1
@@ -176,12 +185,126 @@ h=Integer(F.readline())
 
 #only done for l_0=2
 #very slow
+"""
+E0->isogs[0].codomain()->isogs[0].codomain()->....
+Pour le parcours en entier:
+y'a une bijection -> chemin d'un arbre 3-régulier de profondeur h <-> {0,1,2}^h
+(y'a de la redondance à cause des multiplications mais pas possible de savoir 
+si isogs[0]: E1->E2 = isogenies_2(isogs[0].codomain())[i].dual() sans faire le calcul)
+
+Pour la fonction next:
+On a un entier en base 3, a_0...a_h si on est à l'étage i on avance jusqu'au bout de l'entier,
+puis on recule et tant que le digit est =2 on incrémente l'entier et on recule, si on a pas deux,
+on suit le chemin jusqu'au bout et on recommence. En mémoire faut garder une map E_i->2-isogénies
+sortantes. Et le chemin entier et l'ensemble des isogénies de degré 2^h calculé .
+"""
+
+"""
+For the computation of l_0^h isogenies:
+	Visualise paths of length h in the l_0+1 regular graph as 
+	integers in base l_0+1. Integers in base l_0+1 are in bijection
+	with homomorphism from l_0+1 regular trees of depth h so that 
+	we may get the next path as:
+		-go to depth h
+		-while a_h!=l_0: a_h+=1 (visit all l_0 leaves)
+		-while a_i==l_0: a_i=0, i-=1 (go to the next subtree)
+	which in base l_0+1 means just incrementing the integer
+"""
+
+
+
+def brute_force_orientation_small(E0, primes, alpha1,\
+				alpha2, trace, norm,\
+				l_0, h, l0_h_isogs=[],\
+				path=[], path_base_l0_plus_1=[],\
+				step=0, E_to_l0_isogs={},\
+				intermediate_stop=100):
+
+	def go_to_depth(h, path,\
+		path_base_l0_plus_1,\
+		step, E_to_l0_isogs,\
+		E=E0, init=False):
+
+		while step < h-1:
+			"""
+			Check if the codomain has already been encountered
+			"""
+			l0_isogs=E_to_l0_isogs.get(E)
+			if l0_isogs == None:
+				l0_isogs=isogenies_2(E)
+				E_to_l0_isogs[E]=l0_isogs
+			if init:
+				path.append(l0_isogs[path_base_l0_plus_1[step]])
+			else: 
+				path[step]=l0_isogs[path_base_l0_plus_1[step]]
+
+			E=path[step].codomain()
+			step+=1
+
+	def add_isogs(base, path,\
+		E, l0_h_isogs,\
+		E_to_l0_isogs,\
+		nb_isogs):
+
+		l0_isogs=E_to_l0_isogs.get(E)
+		if l0_isogs==None:
+			l0_isogs=isogenies_2(E)
+			E_to_l0_isogs[E]=l0_isogs
+		
+
+		for i in range(base):
+			l0_h_isogs.append(hom_comp.from_factors(path+[l0_isogs[i]]))
+		nb_isogs+=base
+		
+		
+	def go_back(base, h, step,\
+		path_base_l0_plus_1,
+		intermediate_stop=0):
+
+		while path_base_l0_plus_1[step]==base-1 and step>=intermediate_stop:
+			path_base_l0_plus_1[step]=0
+			step-=1
+		if step==intermediate_stop:
+			return True
+		else:
+			return False
+
+	E=E0
+	go_to_depth(h, path,\
+		path_base_l0_plus_1,\
+		step, E_to_l0_isogs, init=True)
+
+	done=False
+
+	nb_isogs=0
+	while not done:
+		go_to_depth(h, path,\
+			path_base_l0_plus_1,\
+			step, E_to_l0_isogs,\
+			E=E)
+
+		add_isogs(l_0+1,path,\
+			E, l0_h_isogs,\
+			E_to_l0_isogs,\
+			nb_isogs)
+		
+		done=go_back(h, step,\
+			path_base_l0_plus_1,\
+			intermediate_stop)
+
+	return isogs
+
+
+	
+	
+
 def brute_force_orientation(E0, primes, alpha1, alpha2, trace, norm):
 	G=cartesian_product([[0,1,2]]*h)
 	for seq in G:
 		isog_factors=[]
 		E_j=E0
 	#should find a way to not recompute every l_0 isogs each time
+		i=0
 		for j in seq:
 			isogs=isogenies_2(E_j)
 			isog_factors.append(isogs[j])
@@ -195,7 +318,12 @@ def brute_force_orientation(E0, primes, alpha1, alpha2, trace, norm):
 
 #compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm)
 
-brute_force_orientation(E0,primes,alpha1,alpha2,trace,norm)
+nb_samples=Integer(args.samples)
+isogs=brute_force_orientation_small(E0, primes, alpha1,\
+				alpha2, trace, norm,\
+				l_0, h, path_base_l0_plus_1=[0]*h,\
+				intermediate_stop=nb_samples)
 
+print(isogs)
 
 F.close()

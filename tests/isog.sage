@@ -1,13 +1,17 @@
 from sage.schemes.elliptic_curves.weierstrass_morphism import *
 from sage.schemes.elliptic_curves.hom_frobenius import *
 from sage.schemes.elliptic_curves.hom_scalar import EllipticCurveHom_scalar
-#from sage.schemes.elliptic_curves.ell_finite_field import *
 from argparse import ArgumentParser
+from sage.rings.finite_rings.integer_mod import square_root_mod_prime
+from sage.schemes.elliptic_curves.hom_composite import EllipticCurveHom_composite as hom_comp
+from sage.schemes.elliptic_curves.isogeny_small_degree import isogenies_2
 
 parser=ArgumentParser()
-parser.add_argument('-n', '--nbprimes', default='14')
+parser.add_argument('-n', '--nbprimes', default='3')
 
 args=parser.parse_args()
+
+
 
 n=args.nbprimes
 prime_name="../txt/prime_"+n+"_primes.md"
@@ -24,25 +28,18 @@ E0=EllipticCurve(K, [1,0])
 E0.set_order((p+1)**2)
 
 
-#print(psi.rational_maps())
-#print(phi.rational_maps())
-
 
 iota=WeierstrassIsomorphism(E0,[-t,0,0,0], E0)
+l=13
+P,Q=E0.torsion_basis(l)
 
-#E0=E0.change_ring(F)
-#frob=EllipticCurveHom_frobenius(E0)
-#E0=E0.change_ring(K)
+sqrt_l=square_root_mod_prime(Mod(-1, l), p=l)
 
-#print(frob+iota)
+mul_sqrt_l=E0.scalar_multiplication(sqrt_l)
 
-#print(Q, "maps to: ",(frob*iota)(Q))
+print(f"{mul_sqrt_l(P)}, {iota(P)}")
+print(f"{mul_sqrt_l(Q)}, {iota(Q)}")
+print(f"{mul_sqrt_l(Q)==iota(Q)}")
+print(f"{P.order()}, {Q.order()}")
 
-n=10
-m=11
-
-psi_l=E0.division_polynomial(13,x)
-psi_iota_l=psi_l(-x)
-
-print(psi_l-psi_iota_l, 5*gcd(psi_l, psi_iota_l))
 
