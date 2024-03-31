@@ -30,7 +30,8 @@ def graphs_n_reg_depth_h(n,h, base_n_int, step=0, iterations=0):
 			step-=1
 			if base_n_int[step]==n-1:
 				continue
-			base_n_int[step]+=1
+		base_n_int[step]+=1
+		do_stuff()
 		i+=3
 
 

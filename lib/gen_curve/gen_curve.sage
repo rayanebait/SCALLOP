@@ -3,6 +3,7 @@ from sage.schemes.elliptic_curves.weierstrass_morphism import *
 from sage.schemes.elliptic_curves.hom_composite import EllipticCurveHom_composite as hom_comp
 from sage.schemes.elliptic_curves.isogeny_small_degree import isogenies_2
 from argparse import ArgumentParser
+import time 
 
 
 proof.arithmetic(False)
@@ -10,7 +11,7 @@ proof.arithmetic(False)
 parser = ArgumentParser()
 parser.add_argument('-v', '--verbose', action='store_true')
 parser.add_argument('-n', '--nbprimes', default='3')
-parser.add_argument('-s', '--samples', default='100')
+parser.add_argument('-s', '--samples', default='0')
 args = parser.parse_args()
 
 
@@ -180,7 +181,7 @@ endo=[]
 for i in range(4):
 	endo.append(Integer(F.readline()))
 
-l_0=Integer(F.readline())
+l0=Integer(F.readline())
 h=Integer(F.readline())
 
 #only done for l_0=2
@@ -206,8 +207,8 @@ For the computation of l_0^h isogenies:
 	with homomorphism from l_0+1 regular trees of depth h so that 
 	we may get the next path as:
 		-go to depth h
-		-while a_h!=l_0: a_h+=1 (visit all l_0 leaves)
-		-while a_i==l_0: a_i=0, i-=1 (go to the next subtree)
+		-while a_h!=l_0: a_h+=1 (visit all l_0+1 leaves)
+		-while a_i==l_0: a_i=0, i-=1 (go back to an unvisited subtree)
 	which in base l_0+1 means just incrementing the integer
 """
 
@@ -215,17 +216,16 @@ For the computation of l_0^h isogenies:
 
 def brute_force_orientation_small(E0, primes, alpha1,\
 				alpha2, trace, norm,\
-				l_0, h, l0_h_isogs=[],\
-				path=[], path_base_l0_plus_1=[],\
-				step=0, E_to_l0_isogs={},\
+				l0, h,\
 				intermediate_stop=100):
 
-	def go_to_depth(h, path,\
-		path_base_l0_plus_1,\
-		step, E_to_l0_isogs,\
-		E=E0, init=False):
+	def go_to_depth(h, path_base_l0_plus_1, init=False):
+		nonlocal path, step,\
+			E_to_l0_isogs, E
 
 		while step < h-1:
+			if args.verbose:
+				print(f"At node {E.j_invariant()} at step {step}\n")
 			"""
 			Check if the codomain has already been encountered
 			"""
@@ -238,13 +238,12 @@ def brute_force_orientation_small(E0, primes, alpha1,\
 			else: 
 				path[step]=l0_isogs[path_base_l0_plus_1[step]]
 
+			
 			E=path[step].codomain()
 			step+=1
 
-	def add_isogs(base, path,\
-		E, l0_h_isogs,\
-		E_to_l0_isogs,\
-		nb_isogs):
+	def add_isogs(base, path):
+		nonlocal E, E_to_l0_isogs, nb_isogs
 
 		l0_isogs=E_to_l0_isogs.get(E)
 		if l0_isogs==None:
@@ -252,47 +251,59 @@ def brute_force_orientation_small(E0, primes, alpha1,\
 			E_to_l0_isogs[E]=l0_isogs
 		
 
-		for i in range(base):
-			l0_h_isogs.append(hom_comp.from_factors(path+[l0_isogs[i]]))
+		for isog in l0_isogs:
+			l0_h_isogs.append(hom_comp.from_factors(path+[isog]))
 		nb_isogs+=base
+
+
 		
 		
-	def go_back(base, h, step,\
-		path_base_l0_plus_1,
-		intermediate_stop=0):
+	def go_back(base, h, intermediate_stop=0):
+		nonlocal step, path_base_l0_plus_1, E
+
 
 		while path_base_l0_plus_1[step]==base-1 and step>=intermediate_stop:
 			path_base_l0_plus_1[step]=0
 			step-=1
-		if step==intermediate_stop:
+			E=path[step].domain()
+			if args.verbose:
+				print(f"At step {step} and curve {E.j_invariant()}")
+
+		path_base_l0_plus_1[step]+=1
+
+		if step==intermediate_stop-1:
 			return True
 		else:
 			return False
 
 	E=E0
-	go_to_depth(h, path,\
-		path_base_l0_plus_1,\
-		step, E_to_l0_isogs, init=True)
+	path_base_l0_plus_1=[0]*h
+	l0_h_isogs=[]
+	path=[]
+	step=0
+	E_to_l0_isogs={}
+
 
 	done=False
-
 	nb_isogs=0
-	while not done:
-		go_to_depth(h, path,\
-			path_base_l0_plus_1,\
-			step, E_to_l0_isogs,\
-			E=E)
 
-		add_isogs(l_0+1,path,\
-			E, l0_h_isogs,\
-			E_to_l0_isogs,\
-			nb_isogs)
+	go_to_depth(h, path_base_l0_plus_1, init=True)
+	#Petit problème d'indice, calcul l0+1 fois la même chose avant de changer
+	while not done:
+		go_to_depth(h, path_base_l0_plus_1,\
+			init=False)
+
+		add_isogs(l0+1, path)
+		if args.verbose:
+			print(f"Computed {nb_isogs} isogenies\n")
+			print(f"Following path: {path_base_l0_plus_1}\n")
+			print(f"Computed {l0+1} leaves: {l0_h_isogs[nb_isogs-3:nb_isogs]}\n")
 		
-		done=go_back(h, step,\
-			path_base_l0_plus_1,\
+		done=go_back(l0+1, h,\
 			intermediate_stop)
 
-	return isogs
+
+	return l0_h_isogs
 
 
 	
@@ -319,11 +330,13 @@ def brute_force_orientation(E0, primes, alpha1, alpha2, trace, norm):
 #compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm)
 
 nb_samples=Integer(args.samples)
-isogs=brute_force_orientation_small(E0, primes, alpha1,\
-				alpha2, trace, norm,\
-				l_0, h, path_base_l0_plus_1=[0]*h,\
+if nb_samples>h:
+	nb_samples=0
+isogs=brute_force_orientation_small(E0, primes, alpha1,alpha2,\
+				trace, norm, l0, h,\
 				intermediate_stop=nb_samples)
 
-print(isogs)
+if args.verbose:
+	print(f"Computed {len(isogs)} isogenies from {E0} of degree {l0}**{h}={l0**h}\n")
 
 F.close()

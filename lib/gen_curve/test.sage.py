@@ -37,6 +37,8 @@ def graphs_n_reg_depth_h(n,h, base_n_int, step=_sage_const_0 , iterations=_sage_
 			if base_n_int[step]==n-_sage_const_1 :
 				continue
 			base_n_int[step]+=_sage_const_1 
+			do_stuff()
+			break
 		i+=_sage_const_3 
 
 
