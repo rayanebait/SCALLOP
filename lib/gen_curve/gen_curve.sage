@@ -74,10 +74,19 @@ print(factor(norm))
 
 
 """
-	Compute the kernel of w_0 by writing it as phi_L1L2*phi_L1^-1_dual and 
-	compute phi_L1 as the chain of phi_li_Ei. Compute an 
-	the kernel of phi_li by computing the kernel of w_0-sqrt_l 
-	as done in SCALLOP below proposition 8 page 11.
+	Compute the kernel of w_0 simply by getting kernels for 
+	w_0-Tr(w_0) mod l for each l. This works because (deg(w_0)=0
+	mod l so that (w_0-Tr(w_0))*w_0=0). 
+
+
+	To build the morphism choose an ordering on the l's, say
+	(l_i)_i and push l_i through the chain:
+
+		phi_l_(i-1)*...*phi_l_0
+
+	to get phi_l_i. Do the same for l_i_bar without l_0 to
+	complete the lollipop. (isomorphisms may need to be taken
+	to compose phi_L1L2 and the dual of phi_L1^-1.
 """
 def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm, testing=False):
 	O=E0(0,0)-E0(0,0)
@@ -123,10 +132,10 @@ def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm, testi
 			gen_of_l_part.append(P_)
 
 		"""Case l=5 can be jumped here"""
-		P_bar=a_l(P)+(iota*bbar)(P)
-		if P_bar==O or (a(P_bar)+(iota*bbar)(P_bar))!=O:
-			Q_bar=a_l(Q)+(iota*bbar)(Q)
-			if Q_bar==O or (a(Q_bar)+(iota*bbar)(Q_bar))!=O:
+		P_bar=a_l(P)+iota(bbar(P))
+		if P_bar==O or (a(P_bar)+iota(bbar(P_bar))!=O):
+			Q_bar=a_l(Q)+iota(bbar(Q))
+			if Q_bar==O or (a(Q_bar)+iota(bbar(Q_bar))!=O):
 				raise RuntimeError("Curve Generation failed: Couldn't find generator for E[L1^-1]\n")
 			gen_of_l_part_bar.append(Q_bar)
 		else:
@@ -193,19 +202,20 @@ def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm, testi
 
 			return w_0
 	else:
-		P_L1_squared_L2=sum(gen_of_l_part)+sum(gen_of_l_part_bar)
+		P_L1L2=sum(gen_of_l_part)
+		P_L1_bar=sum(gen_of_l_part_bar[1:])
+
+		s_0 = (P_L1L2,P_L1_bar)
 		if args.verbose:
 			
-			print(f"Found kernel generator {P_L1_squared_L2} of order {factor(P_L1_squared_L2.order())} for initial orientation\n")
-		return P_L1_squared_L2
+			print(f"Found kernel representation {s_0} for initial orientation\n")
+		return (s_0, (gen_of_l_part, gen_of_l_part_bar))
 
 	
 endo=[]
-#norm2=0
 for i in range(4):
-	endo.append(Integer(F.readline())//2)
+	endo.append(E0.scalar_multiplication(Integer(F.readline())//2))
 
-#print(f"Factored norm of endomorphism {endo}: {factor(norm2)}\n")
 l0=Integer(F.readline())
 h=Integer(F.readline())
 
@@ -249,7 +259,7 @@ def brute_force_orientation_small(E0, primes, alpha1,\
 
 	def format_j_path(j_path):
 		return "--->".join(str(j) for j in j_path[:len(j_path)-1])\
-			+str(j_path[-1])
+			+"--->"+str(j_path[-1])
 
 	def go_to_depth(h, path_base_l0_plus_1,\
 			init=False, testing=False):
@@ -295,7 +305,10 @@ def brute_force_orientation_small(E0, primes, alpha1,\
 		for isog in l0_isogs:
 			if testing:
 				print(f"{format_j_path(j_path+[isog.codomain().j_invariant()])}")
-			l0_h_isogs.append(hom_comp.from_factors(path+[isog]))
+			#l0_h_isogs.append(hom_comp.from_factors(path+[isog]))
+			l0_h_isogs.append(\
+				hom_comp.from_factors(path+[isog], strict=True)\
+				)
 		nb_isogs+=base
 
 
@@ -320,7 +333,7 @@ def brute_force_orientation_small(E0, primes, alpha1,\
 			return False
 
 	E=E0
-	path_base_l0_plus_1=[1]*h
+	path_base_l0_plus_1=[0]*h
 	l0_h_isogs=[]
 	path=[]
 	step=0
@@ -373,23 +386,92 @@ def brute_force_orientation(E0, primes, alpha1, alpha2, trace, norm):
 	
 testing=args.testing
 if not testing:
-	P=compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm)
+	s_0, l_parts_of_s_0=compute_initial_orientation_l(\
+				E0, primes,\
+				alpha1, alpha2,\
+				trace, norm)
 else:
-	w_0=compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm, testing)
-	print(f"Computed initial orientation: {w_0}\n}")
+	w_0=compute_initial_orientation_l(\
+			E0, primes,\
+			alpha1, alpha2,\
+			trace, norm, testing)
+	print(f"Computed initial orientation: {w_0}\n")
 	exit(0)
 
+if nb_primes!=3:
+	exit(0)
+else:
+	s=(endo[0](s_0[0])+endo[1]( iota(s_0[0]) ),\
+		endo[0](s_0[1])+endo[1]( iota(s_0[1]) ))
+	
+	l_parts_of_s=([endo[0](P_l)+endo[1]( iota(P_l) )\
+			for P_l in l_parts_of_s_0[0]],\
+		[endo[0](P_l_bar)+endo[1]( iota(P_l_bar) )\
+			for P_l_bar in l_parts_of_s_0[1]])
+	
 
 isogs=brute_force_orientation_small(E0, primes, alpha1,alpha2,\
 				trace, norm, l0, h,\
 				intermediate_stop=Integer(args.samples))
 
-
-
 if args.verbose:
-	print(f"Computed {len(isogs)} isogenies from {E0} of degree {l0}**{h}={l0**h}\n")
+	print(f"Computed {len(factored_isogs)} isogenies from {E0} of degree {l0}**{h}={l0**h}\n")
 
+"""
+We know tr(w) is an eigenvalue of w mod l so that 
+we just need to check if either P or P_bar vanish 
+through w-tr
+"""
+def CheckTrace(w, tr, l_parts_of_w):
+	O=l_parts_of_w[0][0]-l_parts_of_w[0][0]
 
+	for (P, P_bar) in zip(l_parts_of_w[0], l_parts_of_w[1]):
+		(P, P_bar)=(w(P)-tr*P, w(P_bar)-tr*P_bar)
+		if P!=O and P_bar!=O:
+			return 0
+	return 1
+		
+w=iota
+E=E0
 
+for phi_i in isogs:
+	Ei=phi_i.codomain()
+	s_Ei=(phi_i(s[0]), phi_i(s[1]))
+	"""
+	Should 1728 be allowed ? 
+	"""
+	if Ei.j_invariant()==1728:
+		continue
+
+	"""Seems really slow, maybe just keep the factors"""
+	phi_L1L2=hom_comp(Ei, s_Ei[0])
+	phi_L1bar=hom_comp(Ei, s_Ei[1]).dual()
+
+	"""Check si on peut vraiment calculer l'orientation comme ca"""
+	E=phi_L1L2.codomain()
+	E_=phi_L1bar.domain()
+	print("--->".join( [str(E.j_invariant()),str(E_.j_invariant())] ))
+	try:
+		iso=E.isomorphism_to(E_)
+	except ValueError:
+		continue
+
+	w_Ei=phi_L1bar*iso*phi_L1L2
+
+	if w_Ei.degree()!=norm:
+		continue
+	l_parts_of_w_Ei=([phi_i(P_l) for P_l in l_parts_of_s[0]],\
+			[phi_i(P_l_bar) for P_l_bar in l_parts_of_s[1]])
+
+	if CheckTrace(w_Ei, trace, l_parts_of_w_Ei)==1:
+		w=w_Ei
+		E=phi_i.codomain()
+		break
+	
+
+if w==iota or E==E0:
+	print(f"Curve generation failed, didn't find the matching l_0^h isogeny\n")
+else:
+	print(f"Successfully generated orientation for {E.j_invariant()}:\n\t {w}\n")
 
 F.close()
