@@ -37,6 +37,9 @@ sqrt_l=square_root_mod_prime(Mod(-1, l), p=l)
 
 mul_sqrt_l=E0.scalar_multiplication(sqrt_l)
 
+R=E0(2627*t + 3170, 8833*t + 4122, 1)
+
+print(f"{R}")
 print(f"{mul_sqrt_l(P)}, {iota(P)}")
 print(f"{mul_sqrt_l(Q)}, {iota(Q)}")
 print(f"{mul_sqrt_l(Q)==iota(Q)}")

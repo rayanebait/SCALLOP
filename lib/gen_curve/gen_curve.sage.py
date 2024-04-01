@@ -101,97 +101,90 @@ def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm):
 			\talpha2={alpha2}\n\
 			And norm: {factor(norm)}")
 
-	for l in primes[_sage_const_3 :]:
+	for l in primes:
 		if args.verbose:
 			print(f"\nComputing generator for E[I] for I a prime above prime :{l}\n")
 	
 		r=_sage_const_0 
 		P, Q=E0.torsion_basis(l)
 		if args.verbose:
-			l_mul=E0.scalar_multiplication(l)
-			print(f"Generators for the l-torsion:\n\t{P}, {Q}\n\nWith [l]*{P}={l_mul(P)}\n\nand [l]*{Q}={l_mul(Q)}\n")
-		sqrt_l=square_root_mod_prime(Mod(-_sage_const_1 ,l),p=l)
+			print(f"Generators for the l-torsion:\n\t{P}, {Q}\n\n")
 
-
-		a_l=E0.scalar_multiplication(Mod(alpha1, l)-sqrt_l)
+		a_l=E0.scalar_multiplication(Mod(alpha1-trace, l))
+		a=E0.scalar_multiplication(Mod(alpha1, l))
 		b=E0.scalar_multiplication(Mod(alpha2,l))
 		bbar=E0.scalar_multiplication(-Mod(alpha2, l))
-		if sqrt_l==_sage_const_0 :
-			a=E0.scalar_multiplication(Mod(alpha1-trace, l))
-		else:
-			#inv=ZZ(GF(l)(sqrt_l)**(-1))
-			correc=Mod(trace-sqrt_l, l)
-			inv=norm/sqrt_l
-			a=E0.scalar_multiplication(Mod(alpha1-inv, l))
-			print(f"norm : {norm}")
-			print(f"Trace mod l: {Mod(trace,l)}\n +-sqrt_l: {sqrt_l}, {Mod(-sqrt_l,l)}\n +-inv: {inv}, {Mod(-inv,l)}\n")
-			return
 
 		if args.verbose:
-			print(f"Pushing {P} through alpha1+ialpha2")
+			print(f"Pushing {P} through alpha1-trace+i*alpha2")
+
 		P_=a(P)+(iota*b)(P)
-		if (a_l(P_)+(iota*b)(P_))!=O:
-			r+=_sage_const_1 
+		if P_==O or (a_l(P_)+(iota*b)(P_))!=O:
 			Q_=a(Q)+(iota*b)(Q)
-			if (a_l(Q_)+(iota*b)(Q_))!=O:
+			if Q_==O or (a_l(Q_)+(iota*b)(Q_))!=O:
 				raise RuntimeError(f"Curve Generation failed: Couldn't find generator for E[L1L2], round {r}, prime {l}\n")
 			gen_of_l_part.append(Q_)
 		else:
 			gen_of_l_part.append(P_)
 
+		"""Case l=5 can be jumped here"""
 		P_bar=a(P)+(iota*bbar)(P)
-		if (a_l(P_bar)+(iota*bbar)(P_bar))!=O:
+		if P_bar==O or (a_l(P_bar)+(iota*bbar)(P_bar))!=O:
 			Q_bar=a(Q)+(iota*bbar)(Q)
-			if (a_l(Q_bar)+(iota*bbar)(Q_bar))!=O:
-				raise RuntimeError("Curve Generation failed: Couldn't find generator for E[L1]\n")
+			if Q_bar==O or (a_l(Q_bar)+(iota*bbar)(Q_bar))!=O:
+				raise RuntimeError("Curve Generation failed: Couldn't find generator for E[L1^-1]\n")
 			gen_of_l_part_bar.append(Q_bar)
 		else:
 			gen_of_l_part_bar.append(P_bar)
 
 
-	phi_5=EllipticCurveIsogeny(E0,gen_of_l_part[_sage_const_0 ])
-	print(phi_5)
-	curve_chain.append(phi_5.codomain())
-	isogeny_chain.append(phi_5)
-	curve_chain_bar.append(E0)
+	E_i, E_i_bar=(E0,E0)
 
-	kernel_iso_components=[]
 	#compute the isogeny factors of phi_L1L2 and phi_L1^-1
-	for i in range(_sage_const_1 ,len(primes)):
-		P=gen_of_l_part[i]
-		Pbar=gen_of_l_part_bar[i]
+	for (P,Pbar) in zip(gen_of_l_part[_sage_const_1 :], gen_of_l_part_bar[_sage_const_1 :]):
 		#push a generator of E0[I_l] through every isogeny to get E_i[I_l]
 		for (phi,phibar) in zip(isogeny_chain, isogeny_chain_bar):
 			P=phi(P)
 			Pbar=phibar(Pbar)
 
-		phi_i=EllipticCurveIsogeny(curve_chain[i-_sage_const_1 ],P)
-		phi_i_bar=EllipticCurveIsogeny(curve_chain_bar[i-_sage_const_1 ],Pbar)
+		phi_i=EllipticCurveIsogeny(E_i,P)
+		phi_i_bar=EllipticCurveIsogeny(E_i_bar,Pbar)
 		print(phi_i)
 
-		curve_chain.append(phi_i.codomain())
-		curve_chain_bar.append(phi_i_bar.codomain())
+		E_i=phi_i.codomain()
+		E_i_bar=phi_i_bar.codomain()
+
 		isogeny_chain.append(phi_i)
 		isogeny_chain_bar.append(phi_i_bar)
+
+	P=gen_of_l_part[_sage_const_0 ]
+	for phi in isogeny_chain:
+		P=phi(P)
+
+	phi_5=EllipticCurveIsogeny(E_i, P)
+	print(phi_5)
+	isogeny_chain.append(phi_5)
 
 	#should only compute the kernel 
 	phi_L1L2=hom_comp.from_factors(isogeny_chain, E0)
 	phi_L1bar=(hom_comp.from_factors(isogeny_chain_bar, E0)).dual()
+	#phi_L1bar=(hom_comp.from_factors(isogeny_chain[:-1], E0)).dual()
 
 	w_0=phi_L1bar*phi_L1L2
 
-	print(factor(phi_L1L2.degree()))
+	return w_0
 
 	
 endo=[]
+#norm2=0
 for i in range(_sage_const_4 ):
-	endo.append(Integer(F.readline()))
+	endo.append(Integer(F.readline())//_sage_const_2 )
 
+#print(f"Factored norm of endomorphism {endo}: {factor(norm2)}\n")
 l0=Integer(F.readline())
 h=Integer(F.readline())
 
 #only done for l_0=2
-#very slow
 """
 E0->isogs[0].codomain()->isogs[0].codomain()->....
 Pour le parcours en entier:
@@ -315,6 +308,7 @@ def brute_force_orientation(E0, primes, alpha1, alpha2, trace, norm):
 		isog_factors=[]
 		E_j=E0
 	#should find a way to not recompute every l_0 isogs each time
+	#USE BRUTE_FORCE_ORIENTATION_SMALL instead
 		i=_sage_const_0 
 		for j in seq:
 			isogs=isogenies_2(E_j)
@@ -327,15 +321,25 @@ def brute_force_orientation(E0, primes, alpha1, alpha2, trace, norm):
 
 	
 
-#compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm)
+w_0=compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm)
 
+print(f"Computed initial orientation: {w_0} and factored degree {factor(w_0.degree())}")
+
+"""
 nb_samples=Integer(args.samples)
 if nb_samples>h:
-	nb_samples=_sage_const_0 
-isogs=brute_force_orientation_small(E0, primes, alpha1,alpha2,				trace, norm, l0, h,				intermediate_stop=nb_samples)
+	nb_samples=0
+"""
 
-if args.verbose:
+"""
+isogs=brute_force_orientation_small(E0, primes, alpha1,alpha2,\
+				trace, norm, l0, h,\
+				intermediate_stop=nb_samples)
+"""
+
+"""if args.verbose:
 	print(f"Computed {len(isogs)} isogenies from {E0} of degree {l0}**{h}={l0**h}\n")
+"""
 
 F.close()
 
