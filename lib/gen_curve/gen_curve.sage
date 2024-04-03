@@ -248,20 +248,28 @@ For the computation of l_0^h isogenies:
 
 
 
-def brute_force_orientation_small(E0, primes, alpha1,\
+def gen_isogs_small(E0, primes, alpha1,\
 				alpha2, trace, norm,\
 				l0, h,\
 				intermediate_stop=0):
 
-	if intermediate_stop>h:
+	if intermediate_stop>h :
 		raise ValueError(f"-i should be < to h\n")
 		return
+	elif intermediate_stop<h-10:
+		"""For at most l0^10 samples at once, should make the 
+		function yield l0^10 isogeny at once, just to make it lighter
+		"""
+		if h<10:
+			intermediate_stop=0
+		else:
+			intermediate_stop=h-10
 
 	def format_j_path(j_path):
 		return "--->".join(str(j) for j in j_path[:len(j_path)-1])\
 			+"--->"+str(j_path[-1])
 
-	def go_to_depth(h, path_base_l0_plus_1,\
+	def go_to_depth(base, h, path_base_l0_plus_1,\
 			init=False, testing=False):
 
 		nonlocal path, step,\
@@ -273,26 +281,65 @@ def brute_force_orientation_small(E0, primes, alpha1,\
 			if args.verbose:
 				print(f"At node {E.j_invariant()} at step {step}\n")
 			"""
-			Check if the codomain has already been encountered
+			Check if the codomain has already been encountered if yes,
+			get the l0-isogenies. Then at each step, check if the 
+			isogeny chosen is the dual of the last one, if yes jump it.
 			"""
 			l0_isogs=E_to_l0_isogs.get(E)
 			if l0_isogs == None:
 				l0_isogs=isogenies_2(E)
 				E_to_l0_isogs[E]=l0_isogs
+			isog=l0_isogs[path_base_l0_plus_1[step]]
 			if init:
-				path.append(l0_isogs[path_base_l0_plus_1[step]])
+				if step==0:
+					path.append(isog)
+				else:
+
+					if path[step-1]==isog.dual():
+						if path_base_l0_plus_1[step]==base-1:
+							"""
+							Finished this side of the tree
+							go back
+							"""
+							return True
+						else:
+							path_base_l0_plus1[step]+=1
+							isog=l0_isogs[\
+								path_base_l0_plus_1[step]\
+								]
+							path.append(isog)
+					else:
+						path.append(isog)
 				if testing:
 					j_path.append(E.j_invariant())
 			else: 
-				path[step]=l0_isogs[path_base_l0_plus_1[step]]
+				if step==0:
+					path[step]=isog
+				else:
+					if path[step-1]==isog.dual():
+						if path_base_l0_plus_1[step]==base-1:
+							return True
+						else:
+							path_base_l0_plus_1[step]+=1
+							isog=l0_isogs[\
+								path_base_l0_plus_1[step]\
+								]
+							path[step]=isog
+					else:
+						path[step]=isog
 				if testing:
 					j_path[step]=E.j_invariant()
 			
 			E=path[step].codomain()
 			step+=1
 
+		return False
+
 	def add_isogs(base, path, testing=False):
-		nonlocal E, E_to_l0_isogs, nb_isogs, j_path
+		nonlocal E, E_to_l0_isogs,\
+			nb_isogs, j_path,\
+			h, step
+
 		if testing:
 			nonlocal j_path
 
@@ -303,13 +350,15 @@ def brute_force_orientation_small(E0, primes, alpha1,\
 		
 
 		for isog in l0_isogs:
-			if testing:
-				print(f"{format_j_path(j_path+[isog.codomain().j_invariant()])}")
-			#l0_h_isogs.append(hom_comp.from_factors(path+[isog]))
-			l0_h_isogs.append(\
-				hom_comp.from_factors(path+[isog], strict=True)\
+			if isog==path[step-1].dual():
+				continue
+			else:
+				l0_h_isogs.append(\
+					hom_comp.from_factors(path+[isog], strict=True)\
 				)
-		nb_isogs+=base
+			if testing:
+				print(f"{format_j_path(j_path+[isog.codomain().j_invariant()])}\nwith base {base} path {path_base_l0_plus_1} and length {h}\n")
+		nb_isogs+=base-1
 
 
 		
@@ -333,7 +382,7 @@ def brute_force_orientation_small(E0, primes, alpha1,\
 			return False
 
 	E=E0
-	path_base_l0_plus_1=[0]*h
+	path_base_l0_plus_1=[1]*h
 	l0_h_isogs=[]
 	path=[]
 	step=0
@@ -344,11 +393,17 @@ def brute_force_orientation_small(E0, primes, alpha1,\
 	done=False
 	nb_isogs=0
 
-	go_to_depth(h, path_base_l0_plus_1, init=True, testing=True)
-	#Petit problème d'indice, calcul l0+1 fois la même chose avant de changer
+	while go_to_depth(l0+1, h, path_base_l0_plus_1, init=True, testing=True):
+		done=go_back(l0+1,h,intermediate_stop)
+		continue
+
+	#Petit problème, calcul l0+1 fois la même chose avant de changer
 	while not done:
-		go_to_depth(h, path_base_l0_plus_1,\
-			init=False, testing=True)
+		if go_to_depth(l0+1, h, path_base_l0_plus_1,\
+			init=False, testing=True):
+
+			done=go_back(l0+1,h,intermediate_stop)
+			continue
 
 		add_isogs(l0+1, path, testing=True)
 		if args.verbose:
@@ -366,8 +421,8 @@ def brute_force_orientation_small(E0, primes, alpha1,\
 	
 	
 
-#USE BRUTE_FORCE_ORIENTATION_SMALL instead
-def brute_force_orientation(E0, primes, alpha1, alpha2, trace, norm):
+#USE GEN_ISOGS_SMALL instead
+def gen_isogs(E0, primes, alpha1, alpha2, trace, norm):
 	G=cartesian_product([[0,1,2]]*h)
 	for seq in G:
 		isog_factors=[]
@@ -410,7 +465,7 @@ else:
 			for P_l_bar in l_parts_of_s_0[1]])
 	
 
-isogs=brute_force_orientation_small(E0, primes, alpha1,alpha2,\
+isogs=gen_isogs_small(E0, primes, alpha1,alpha2,\
 				trace, norm, l0, h,\
 				intermediate_stop=Integer(args.samples))
 
@@ -419,15 +474,15 @@ if args.verbose:
 
 """
 We know tr(w) is an eigenvalue of w mod l so that 
-we just need to check if either P or P_bar vanish 
-through w-tr
+we just need to check if P and P_bar vanish 
+through w*(w-tr)?
 """
 def CheckTrace(w, tr, l_parts_of_w):
 	O=l_parts_of_w[0][0]-l_parts_of_w[0][0]
 
 	for (P, P_bar) in zip(l_parts_of_w[0], l_parts_of_w[1]):
-		(P, P_bar)=(w(P)-tr*P, w(P_bar)-tr*P_bar)
-		if P!=O and P_bar!=O:
+		(P, P_bar)=(w(w(P)-tr*P), w(w(P_bar)-tr*P_bar))
+		if P!=O or P_bar!=O:
 			return 0
 	return 1
 		
@@ -447,7 +502,7 @@ for phi_i in isogs:
 	phi_L1L2=hom_comp(Ei, s_Ei[0])
 	phi_L1bar=hom_comp(Ei, s_Ei[1]).dual()
 
-	"""Check si on peut vraiment calculer l'orientation comme ca"""
+	"""Should check if the orientation can really be computed that way"""
 	E=phi_L1L2.codomain()
 	E_=phi_L1bar.domain()
 	print("--->".join( [str(E.j_invariant()),str(E_.j_invariant())] ))
