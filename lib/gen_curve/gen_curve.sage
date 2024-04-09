@@ -4,7 +4,8 @@ from sage.schemes.elliptic_curves.hom_composite import EllipticCurveHom_composit
 from sage.schemes.elliptic_curves.isogeny_small_degree import isogenies_2
 from argparse import ArgumentParser
 import time 
-
+from pprint import pp
+from os import get_terminal_size
 
 proof.arithmetic(False)
 
@@ -19,6 +20,9 @@ args = parser.parse_args()
 n=args.nbprimes
 if n!='3' and n!='14' and n!='19' and n!='20' and n!='26':
 	raise SystemExit(f"Currently supports 3, 14, 19, 20 and 26 primes parameters, not {n}\n")
+
+nb_lines_terminal=get_terminal_size().lines
+CLEAR='\r'+'\033[<'+str(nb_lines_terminal)+'>A'
 
 nb_primes=Integer(n)
 
@@ -72,12 +76,130 @@ iota=WeierstrassIsomorphism(E0, [-J,0,0,0], E0)
 
 print(factor(norm))
 
+def orientation_from_factors(E_l, l_parts_of_s_l):
+	E_i, E_i_bar=(E_l,E_l)
+	(gen_of_l_part, gen_of_l_part_bar)=l_parts_of_s_l
+
+	j_path=[E_l.j_invariant()]
+	j_bar_path=[E_l.j_invariant()]
+
+	isogeny_chain=[]
+	isogeny_chain_bar=[]
+	curve_chain=[]
+	curve_chain_bar=[]
+
+
+	#compute the isogeny factors of phi_L1 and phi_L1^-1
+	for (P,Pbar) in zip(gen_of_l_part[1:], gen_of_l_part_bar[1:]):
+		#push a generator of E0[I_l] through every isogeny to get E_i[I_l]
+		for (phi,phibar) in zip(isogeny_chain, isogeny_chain_bar):
+			P=phi(P)
+			Pbar=phibar(Pbar)
+
+		phi_i=EllipticCurveIsogeny(E_i,P)
+		phi_i_bar=EllipticCurveIsogeny(E_i_bar,Pbar)
+
+		E_i=phi_i.codomain()
+		E_i_bar=phi_i_bar.codomain()
+
+		j_path.append(E_i.j_invariant())
+		j_bar_path.append(E_i_bar.j_invariant())
+
+		isogeny_chain.append(phi_i)
+		isogeny_chain_bar.append(phi_i_bar)
+	
+	P_L2=gen_of_l_part[0]
+	P_L2_bar=gen_of_l_part_bar[0]
+	for (phi,phi_bar) in zip(isogeny_chain, isogeny_chain_bar):
+		P_L2=phi(P_L2)
+		P_L2_bar=phi_bar(P_L2_bar)
+
+	phi_L2=E_i.isogeny(P_L2)
+	phi_L2_bar=E_i.isogeny(P_L2_bar)
+
+	E_L2=E_i
+
+	E_L2_bis=phi_L2.codomain()
+	E_L2_bis_bis=phi_L2_bar.codomain()
+
+	phi_L1=hom_comp.from_factors(isogeny_chain, E_l)
+	phi_L1bar=(hom_comp.from_factors(isogeny_chain_bar, E_l)).dual()
+
+	if args.verbose:
+		path_str='--->'.join(str(j) for j in j_path[:len(j_path)-1])
+		path_str+="--->"+str(j_path[-1])
+
+		print(f"Took path:\n\t")
+		print(f"{path_str} for phi_L1\n\n")
+
+		path_str=str(E_L2.j_invariant())+"--->"+str(E_L2_bis.j_invariant())
+		path_str_bar=str(E_L2.j_invariant())+"--->"+str(E_L2_bis_bis.j_invariant())
+
+		print(f"Took path:\n\t")
+		print(f"{path_str} for phi_L2\n\n")
+		print(f"and path:\n\t")
+		print(f"{path_str_bar} for phi_L2_bar\n\n")
+
+		path_str='--->'.join(str(j) for j in j_bar_path[:len(j_bar_path)-1])
+		path_str+="--->"+str(j_bar_path[-1])
+
+		print(f"Took path:\n\t")
+		print(f"{path_str} for phi_L1^-1\n\n")
+
+	try:
+		iso=E_L2_bis.isomorphism_to(E_i_bar)
+		w=phi_L1bar*iso*phi_L2*phi_L1
+	except TypeError:
+		try:
+			iso=E_L2_bis_bis.isomorphism_to(E_i_bar)
+			w=phi_L1bar*iso*phi_L2*phi_L1
+		except TypeError:
+			raise RuntimeError(f"Orientation generation failed\n")
+
+	return w
+
+def orientation_from_factors_slow(E_l, s_l):
+	print(f"Generation of orientation for {E_l.j_invariant()}\n")
+
+	(P_L1, P_L1_bar, (P_L2, P_L2_bar))=s_l
+
+	phi_L1=hom_comp(E_l, P_L1)
+	phi_L1_bar=hom_comp(E_l, P_L1_bar).dual()
+
+	E_L2=phi_L1.codomain()
+	E_L2_bar=phi_L1_bar.domain()
+
+	print(f"First isogeny of degree {factor(phi_L1.degree())}:\n\t{E_l.j_invariant()}--->{E_L2.j_invariant()}")
+
+	phi_L2=E_L2.isogeny(phi_L1(P_L2))
+	phi_L2_bar=E_L2.isogeny(phi_L1(P_L2_bar))
+
+	E_L2_bis=phi_L2.codomain()
+	E_L2_bis_bis=phi_L2_bar.codomain()
+
+	print(f"Second isogeny of degree {factor(phi_L2.degree())} between:\n\t{E_L2.j_invariant()}--->{E_L2_bis.j_invariant()}")
+	print(f"and (of degree {factor(phi_L2_bar.degree())}):\n\t{E_L2.j_invariant()}--->{E_L2_bis_bis.j_invariant()}")
+
+	print(f"Third isogeny of degree {factor(phi_L1_bar.degree())}:\n\t{E_L2_bar.j_invariant()}--->{E_l.j_invariant()}\n")
+
+	try:
+		iso=E_L2_bis.isomorphism_to(E_L2_bar)
+		w=phi_L1bar*iso*phi_L2*phi_L1
+	except ValueError:
+		None
+
+	try:
+		iso=E_L2_bis_bis.isomorphism_to(E_L2_bar)
+		w=phi_L1bar*iso*phi_L2*phi_L1
+	except ValueError:
+		return None
+	return w
 
 """
 	Compute the kernel of w_0 simply by getting kernels for 
 	w_0-Tr(w_0) mod l for each l. This works because (deg(w_0)=0
 	mod l so that (w_0-Tr(w_0))*w_0=0). 
-
+f
 
 	To build the morphism choose an ordering on the l's, say
 	(l_i)_i and push l_i through the chain:
@@ -88,7 +210,10 @@ print(factor(norm))
 	complete the lollipop. (isomorphisms may need to be taken
 	to compose phi_L1L2 and the dual of phi_L1^-1.
 """
-def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm, testing=False):
+def compute_initial_orientation_l(\
+			E0, primes, alpha1,\
+			alpha2,trace, norm,\
+			keep_factors=False, testing=False):
 	O=E0(0,0)-E0(0,0)
 
 	gen_of_l_part=[]
@@ -106,115 +231,55 @@ def compute_initial_orientation_l(E0, primes, alpha1, alpha2, trace, norm, testi
 			And norm: {factor(norm)}")
 
 	for l in primes:
+		sqrt_l=Integer(square_root_mod_prime(Mod(-1, l),p=l))
 		if args.verbose:
 			print(f"\nComputing generator for E[I] for I a prime above prime :{l}\n")
 	
-		r=0
-		P, Q=E0.torsion_basis(l)
+		P_l, Q_l=E0.torsion_basis(l)
 		if args.verbose:
-			print(f"Generators for the l-torsion:\n\t{P}, {Q}\n\n")
-
-		a_l=E0.scalar_multiplication(Mod(alpha1-trace, l))
-		a=E0.scalar_multiplication(Mod(alpha1, l))
-		b=E0.scalar_multiplication(Mod(alpha2,l))
-		bbar=E0.scalar_multiplication(-Mod(alpha2, l))
+			print(f"Generators for the l-torsion:\n\t{P_l}, {Q_l}\n\n")
 
 		if args.verbose:
-			print(f"Pushing {P} through w\n")
+			print(f"Pushing {P_l} and {Q_l} through iota+/-sqrt_l\n")
 
-		P_=a_l(P)+(iota*b)(P)
-		if P_==O or (a(P_)+(iota*b)(P_))!=O:
-			Q_=a_l(Q)+(iota*b)(Q)
-			if Q_==O or (a(Q_)+(iota*b)(Q_))!=O:
-				raise RuntimeError(f"Curve Generation failed: Couldn't find generator for E[L1L2], round {r}, prime {l}\n")
-			gen_of_l_part.append(Q_)
+
+		(P_l_bar, Q_l_bar)=(sqrt_l*P_l-iota(P_l), sqrt_l*Q_l-iota(Q_l))
+		(P_l, Q_l)=(sqrt_l*P_l+iota(P_l), sqrt_l*Q_l+iota(Q_l))
+
+		"""Now P_l, Q_l\in ker(iota-sqrt_l), they even generate it if nonzero (one of them must be)."""
+
+		if P_l==O:
+			gen_of_l_part.append(Q_l)
 		else:
-			gen_of_l_part.append(P_)
+			gen_of_l_part.append(P_l)
 
-		"""Case l=5 can be jumped here"""
-		P_bar=a_l(P)+iota(bbar(P))
-		if P_bar==O or (a(P_bar)+iota(bbar(P_bar))!=O):
-			Q_bar=a_l(Q)+iota(bbar(Q))
-			if Q_bar==O or (a(Q_bar)+iota(bbar(Q_bar))!=O):
-				raise RuntimeError("Curve Generation failed: Couldn't find generator for E[L1^-1]\n")
-			gen_of_l_part_bar.append(Q_bar)
+		if P_l_bar==O:
+			gen_of_l_part_bar.append(Q_l_bar)
 		else:
-			gen_of_l_part_bar.append(P_bar)
+			gen_of_l_part_bar.append(P_l_bar)
 
+	P_L1=sum(gen_of_l_part[1:])
+	P_L1_bar=sum(gen_of_l_part_bar[1:])
+	gens_L2=(gen_of_l_part[0], gen_of_l_part_bar[0])
+
+	print(f"Orders: {factor(P_L1.order())}, {factor(P_L1_bar.order())}, {gens_L2[0].order()}, {gens_L2[1].order()}\n")
+
+	s_0 = (P_L1, P_L1_bar, gens_L2)
 
 	if testing:
-		E_i, E_i_bar=(E0,E0)
-		j_path=[1728]
-		j_bar_path=[1728]
-
-
-		#compute the isogeny factors of phi_L1L2 and phi_L1^-1
-		for (P,Pbar) in zip(gen_of_l_part[1:], gen_of_l_part_bar[1:]):
-			#push a generator of E0[I_l] through every isogeny to get E_i[I_l]
-			for (phi,phibar) in zip(isogeny_chain, isogeny_chain_bar):
-				P=phi(P)
-				Pbar=phibar(Pbar)
-
-			phi_i=EllipticCurveIsogeny(E_i,P)
-			phi_i_bar=EllipticCurveIsogeny(E_i_bar,Pbar)
-
-			E_i=phi_i.codomain()
-			E_i_bar=phi_i_bar.codomain()
-
-			j_path.append(E_i.j_invariant())
-			j_bar_path.append(E_i_bar.j_invariant())
-
-			isogeny_chain.append(phi_i)
-			isogeny_chain_bar.append(phi_i_bar)
-
-		P=gen_of_l_part[0]
-		for phi in isogeny_chain:
-			P=phi(P)
-
-		phi_5=EllipticCurveIsogeny(E_i, P)
-		isogeny_chain.append(phi_5)
-
-		j_path.append(phi_5.codomain().j_invariant())
-
-		phi_L1L2=hom_comp.from_factors(isogeny_chain, E0)
-		phi_L1bar=(hom_comp.from_factors(isogeny_chain_bar, E0)).dual()
-
-		if args.verbose:
-			path_str='--->'.join(str(j) for j in j_path[:len(j_path)-1])
-			path_str+="--->"+str(j_path[-1])
-
-			print(f"Took path:\n\t")
-			print(f"{path_str} for phi_L1L2\n\n")
-
-			path_str='--->'.join(str(j) for j in j_bar_path[:len(j_bar_path)-1])
-			path_str+="--->"+str(j_bar_path[-1])
-
-			print(f"Took path:\n\t")
-			print(f"{path_str} for phi_L1^-1\n\n")
-		try:
-			w_0=phi_L1bar*phi_L1L2
-		except TypeError:
-			E=phi_L1L2.codomain()
-			E_=phi_L1bar.domain()
-			iso=E.isomorphism_to(E_)
-			print(iso)
-			w_0=phi_L1bar*iso*phi_L1L2
-
-			return w_0
+		return orientation_from_factors_slow(E0, s_0)
 	else:
-		P_L1L2=sum(gen_of_l_part)
-		P_L1_bar=sum(gen_of_l_part_bar[1:])
-
-		s_0 = (P_L1L2,P_L1_bar)
 		if args.verbose:
-			
 			print(f"Found kernel representation {s_0} for initial orientation\n")
-		return (s_0, (gen_of_l_part, gen_of_l_part_bar))
+		if keep_factors:
+			return (gen_of_l_part, gen_of_l_part_bar)
+		else:
+			return s_0
 
 	
 endo=[]
 for i in range(4):
-	endo.append(E0.scalar_multiplication(Integer(F.readline())//2))
+	endo.append(Integer(F.readline())//2)
 
 l0=Integer(F.readline())
 h=Integer(F.readline())
@@ -273,80 +338,82 @@ def gen_isogs_small(E0, primes, alpha1,\
 			init=False, testing=False):
 
 		nonlocal path, step,\
-			E_to_l0_isogs, E
+			E_to_l0_isogs, E_i,\
+			l0_h_isogs, nb_isogs
+
 		if testing:
 			nonlocal j_path
 
-		while step < h-1:
-			if args.verbose:
-				print(f"At node {E.j_invariant()} at step {step}\n")
+		if step==h-1:
+			if testing:
+				if init:
+					j_path.append(E_i.j_invariant())
+				else:
+					j_path[step]=E_i.j_invariant()
+				print(f"{format_j_path(j_path)}\nwith base {base} path {path_base_l0_plus_1} and length {h}\n")
+
+
+			l0_h_isogs.append(\
+				hom_comp.from_factors(path)\
+			)
+			nb_isogs+=1
+
+			return
+
+		while step < h:
+			if testing:
+				print(f"At node {E_i.j_invariant()} at step {step}\n")
 			"""
 			Check if the codomain has already been encountered if yes,
 			get the l0-isogenies. Then at each step, check if the 
 			isogeny chosen is the dual of the last one, if yes jump it.
+			(seems not doable since dual is defined up to isomorphism)
 			"""
-			l0_isogs=E_to_l0_isogs.get(E)
+			l0_isogs=E_to_l0_isogs.get(E_i)
 			if l0_isogs == None:
-				l0_isogs=isogenies_2(E)
-				E_to_l0_isogs[E]=l0_isogs
+				l0_isogs=isogenies_2(E_i)
+				E_to_l0_isogs[E_i]=l0_isogs
 			isog=l0_isogs[path_base_l0_plus_1[step]]
+
 			if init:
-				if step==0:
-					path.append(isog)
-				else:
-
-					if path[step-1]==isog.dual():
-						if path_base_l0_plus_1[step]==base-1:
-							"""
-							Finished this side of the tree
-							go back
-							"""
-							return True
-						else:
-							path_base_l0_plus1[step]+=1
-							isog=l0_isogs[\
-								path_base_l0_plus_1[step]\
-								]
-							path.append(isog)
-					else:
-						path.append(isog)
+				path.append(isog)
 				if testing:
-					j_path.append(E.j_invariant())
+					j_path.append(E_i.j_invariant())
 			else: 
-				if step==0:
-					path[step]=isog
-				else:
-					if path[step-1]==isog.dual():
-						if path_base_l0_plus_1[step]==base-1:
-							return True
-						else:
-							path_base_l0_plus_1[step]+=1
-							isog=l0_isogs[\
-								path_base_l0_plus_1[step]\
-								]
-							path[step]=isog
-					else:
-						path[step]=isog
+				path[step]=isog
 				if testing:
-					j_path[step]=E.j_invariant()
+					j_path[step]=E_i.j_invariant()
 			
-			E=path[step].codomain()
+			E_i=path[step].codomain()
 			step+=1
+		step-=1
+		if testing:
+			if init:
+				j_path.append(E_i.j_invariant())
+			else:
+				j_path[step]=E_i.j_invariant()
+			print(f"{format_j_path(j_path)}\nwith base {base} path {path_base_l0_plus_1} and length {h}\n")
 
-		return False
+
+		l0_h_isogs.append(\
+			hom_comp.from_factors(path)\
+		)
+		nb_isogs+=1
+
+		return
 
 	def add_isogs(base, path, testing=False):
-		nonlocal E, E_to_l0_isogs,\
+		nonlocal E_i, E_to_l0_isogs,\
 			nb_isogs, j_path,\
 			h, step
 
 		if testing:
 			nonlocal j_path
 
-		l0_isogs=E_to_l0_isogs.get(E)
+		l0_isogs=E_to_l0_isogs.get(E_i)
 		if l0_isogs==None:
-			l0_isogs=isogenies_2(E)
-			E_to_l0_isogs[E]=l0_isogs
+			l0_isogs=isogenies_2(E_i)
+			E_to_l0_isogs[E_i]=l0_isogs
 		
 
 		for isog in l0_isogs:
@@ -363,16 +430,16 @@ def gen_isogs_small(E0, primes, alpha1,\
 
 		
 		
-	def go_back(base, h, intermediate_stop=0):
-		nonlocal step, path_base_l0_plus_1, E
+	def go_back(base, h, intermediate_stop=0, testing=False):
+		nonlocal step, path_base_l0_plus_1, E_i
 
 
 		while path_base_l0_plus_1[step]==base-1 and step>=intermediate_stop:
 			path_base_l0_plus_1[step]=0
 			step-=1
-			E=path[step].domain()
-			if args.verbose:
-				print(f"At step {step} and curve {E.j_invariant()}")
+			E_i=path[step].domain()
+			if testing:
+				print(f"At step {step} and curve {E_i.j_invariant()}")
 
 		path_base_l0_plus_1[step]+=1
 
@@ -381,8 +448,8 @@ def gen_isogs_small(E0, primes, alpha1,\
 		else:
 			return False
 
-	E=E0
-	path_base_l0_plus_1=[1]*h
+	E_i=E0
+	path_base_l0_plus_1=([1]*h)
 	l0_h_isogs=[]
 	path=[]
 	step=0
@@ -393,35 +460,19 @@ def gen_isogs_small(E0, primes, alpha1,\
 	done=False
 	nb_isogs=0
 
-	while go_to_depth(l0+1, h, path_base_l0_plus_1, init=True, testing=True):
-		done=go_back(l0+1,h,intermediate_stop)
-		continue
+	go_to_depth(l0+1, h, path_base_l0_plus_1,\
+			init=True, testing=False)
 
-	#Petit problème, calcul l0+1 fois la même chose avant de changer
 	while not done:
-		if go_to_depth(l0+1, h, path_base_l0_plus_1,\
-			init=False, testing=True):
-
-			done=go_back(l0+1,h,intermediate_stop)
-			continue
-
-		add_isogs(l0+1, path, testing=True)
-		if args.verbose:
-			print(f"Computed {nb_isogs} isogenies\n")
-			print(f"Following path: {path_base_l0_plus_1}\n")
-			print(f"Computed {l0+1} leaves: {l0_h_isogs[nb_isogs-3:nb_isogs]}\n")
+		go_to_depth(l0+1, h, path_base_l0_plus_1,\
+			init=False, testing=False)
 		
 		done=go_back(l0+1, h,\
-			intermediate_stop)
-
-
+			intermediate_stop, testing=False)
 	return l0_h_isogs
-
-
-	
 	
 
-#USE GEN_ISOGS_SMALL instead
+"""USE GEN_ISOGS_SMALL instead"""
 def gen_isogs(E0, primes, alpha1, alpha2, trace, norm):
 	G=cartesian_product([[0,1,2]]*h)
 	for seq in G:
@@ -440,40 +491,51 @@ def gen_isogs(E0, primes, alpha1, alpha2, trace, norm):
 
 	
 testing=args.testing
-if not testing:
-	s_0, l_parts_of_s_0=compute_initial_orientation_l(\
-				E0, primes,\
-				alpha1, alpha2,\
-				trace, norm)
-else:
+keep_factors=False
+if testing:
 	w_0=compute_initial_orientation_l(\
 			E0, primes,\
 			alpha1, alpha2,\
 			trace, norm, testing)
 	print(f"Computed initial orientation: {w_0}\n")
 	exit(0)
+else:
+	if keep_factors:
+		l_parts_of_s_0=compute_initial_orientation_l(\
+				E0, primes,\
+				alpha1, alpha2,\
+				trace, norm, keep_factors=True)
+	else:
+		s_0=compute_initial_orientation_l(\
+				E0, primes,\
+				alpha1, alpha2,\
+				trace, norm, keep_factors=False)
 
-if nb_primes!=3:
+if nb_primes==0:
 	exit(0)
 else:
-	s=(endo[0](s_0[0])+endo[1]( iota(s_0[0]) ),\
-		endo[0](s_0[1])+endo[1]( iota(s_0[1]) ))
+	if args.verbose:
+		print(f"Pushing initial orientation through endomorphism {endo[0]}+i*{endo[1]} of norm {factor(endo[0]**2+endo[1]**2)}\n")
+
+	if keep_factors:
+		l_parts_of_s=([endo[0]*P_l+endo[1]* iota(P_l) \
+				for P_l in l_parts_of_s_0[0]],\
+			[endo[0]*P_l_bar+endo[1]*iota(P_l_bar) \
+				for P_l_bar in l_parts_of_s_0[1]])
+	else:
+		s=(endo[0]*s_0[0]+endo[1]*iota(s_0[0]),\
+			endo[0]*s_0[1]+endo[1]*iota(s_0[1]),\
+			(endo[0]*P_L2+endo[1]*iota(P_L2) for P_L2 in s_0[2]))
 	
-	l_parts_of_s=([endo[0](P_l)+endo[1]( iota(P_l) )\
-			for P_l in l_parts_of_s_0[0]],\
-		[endo[0](P_l_bar)+endo[1]( iota(P_l_bar) )\
-			for P_l_bar in l_parts_of_s_0[1]])
 	
 
-isogs=gen_isogs_small(E0, primes, alpha1,alpha2,\
+isogs=gen_isogs_small(E0, primes, alpha1, alpha2,\
 				trace, norm, l0, h,\
 				intermediate_stop=Integer(args.samples))
 
-if args.verbose:
-	print(f"Computed {len(factored_isogs)} isogenies from {E0} of degree {l0}**{h}={l0**h}\n")
 
 """
-We know tr(w) is an eigenvalue of w mod l so that 
+We know tr(w) and 0 are eigenvalues of w mod l so that 
 we just need to check if P and P_bar vanish 
 through w*(w-tr)?
 """
@@ -489,9 +551,22 @@ def CheckTrace(w, tr, l_parts_of_w):
 w=iota
 E=E0
 
+
 for phi_i in isogs:
 	Ei=phi_i.codomain()
-	s_Ei=(phi_i(s[0]), phi_i(s[1]))
+	if keep_factors:
+		l_parts_of_s_Ei=([phi_i(P_l) for P_l in l_parts_of_s[0]],\
+						[phi_i(P_l_bar) for P_l_bar in l_parts_of_s[1]])
+		w1=orientation_from_factors(Ei, l_parts_of_s_Ei)
+	else:
+		s_Ei=(phi_i(s[0]),\
+		   phi_i(s[1]),\
+		   (phi_i(P) for P in s[2]))
+		w1=orientation_from_factors_slow(Ei, s_Ei)
+		if w1==None:
+			break
+	print(w1)
+	continue
 	"""
 	Should 1728 be allowed ? 
 	"""
@@ -512,6 +587,7 @@ for phi_i in isogs:
 		continue
 
 	w_Ei=phi_L1bar*iso*phi_L1L2
+	print(factor(w_Ei.degree()))
 
 	if w_Ei.degree()!=norm:
 		continue

@@ -8,17 +8,10 @@ from sage.schemes.elliptic_curves.isogeny_small_degree import isogenies_2
 
 parser=ArgumentParser()
 parser.add_argument('-n', '--nbprimes', default='3')
+parser.add_argument('-v', '--verbose', action='store_true')
 
 args=parser.parse_args()
 
-
-
-n=args.nbprimes
-prime_name="../txt/prime_"+n+"_primes.md"
-
-n=Integer(n)
-
-F=open(prime_name, "r")
 p=Integer(F.readline())
 
 K.<t>=GF((p,2), modulus=[1,0,1])
