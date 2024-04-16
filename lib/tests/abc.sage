@@ -121,8 +121,6 @@ P_l,Q_l=E0.torsion_basis(l)
 
 iota=WeierstrassIsomorphism(E0,[-t,0,0,0], E0)
 
-sqrt_l=square_root_mod_prime(Mod(-1, l), p=l)
-sqrt_5=square_root_mod_prime(Mod(-1, 5), p=5)
 
 """
 From the (non primitive) orientation by alpha on E0, push it through phi_f for some 
@@ -138,6 +136,9 @@ So that to compute w_0 we can simply find an eigenvector of iota mod l.
 WARNING! GOT STUCK A LONG TIME BECAUSE THE l or l_bar/ 5 or 5_bar 
 combination is important
 """
+K1.<i>=NumberField(x^2+1)
+sqrt_l=K1.primes_above(l)[0].gens_two()[1].real()
+sqrt_5=K1.primes_above(5)[0].gens_two()[1].real()
 O=P_l-P_l
 (P_l_bar, Q_l_bar)=(sqrt_l*P_l+iota(P_l), sqrt_l*Q_l+iota(Q_l))
 (P_l, Q_l)=(sqrt_l*P_l-iota(P_l), sqrt_l*Q_l-iota(Q_l))
@@ -188,24 +189,5 @@ w=phi_l_bar*iso*phi_5*phi_l
 print(w)
 
 
-exit(0)
-prime=5
-while E.j_invariant()!=j:
-	P,Q=E.torsion_basis(prime)
-	prime_isogs=E.isogenies_5_1728()
-	
-	
-
-
-
-mul_sqrt_l=E0.scalar_multiplication(sqrt_l)
-
-R=E0(2627*t + 3170, 8833*t + 4122, 1)
-
-print(f"{R}")
-print(f"{mul_sqrt_l(P)}, {iota(P)}")
-print(f"{mul_sqrt_l(Q)}, {iota(Q)}")
-print(f"{mul_sqrt_l(Q)==iota(Q)}")
-print(f"{P.order()}, {Q.order()}")
 
 
